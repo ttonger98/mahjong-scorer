@@ -994,12 +994,11 @@ function renderWinPreview() {
   const winChanges = state.config.horseOn
     ? applyHorses(baseChanges, winState.winner, winState.horses)
     : baseChanges;
-  const kongChanges = sumChanges((state.currentHand || {}).kongs);
-  const changes = winChanges.map((v, i) => +(v + kongChanges[i]).toFixed(2));
+  const changes = winChanges; // 仅胡牌本身，杠在下方本局合计中一并结算
   const horseNotes = state.config.horseOn ? horseNotesText(winState.winner, winState.horses, baseChanges) : [];
   const handKongs = (state.currentHand || {}).kongs || [];
   const kongNote = handKongs.length > 0
-    ? `<div style="font-size:12px;color:var(--text-sec);margin-top:4px;">本局另有 ${handKongs.length} 条杠将一并结算</div>`
+    ? `<div style="font-size:12px;color:var(--text-sec);margin-top:4px;">以上仅为胡牌分数；本局另有 ${handKongs.length} 条杠，将在下方“本局合计”中一并结算</div>`
     : '';
   const noteHtml = (horseNotes.length > 0 || kongNote)
     ? `<div style="font-size:12px;color:var(--accent);margin-top:6px;font-weight:600;white-space:pre-line;">${esc(horseNotes.join('\n'))}</div>${kongNote}`
