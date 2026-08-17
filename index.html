@@ -13,6 +13,8 @@
 <meta property="og:type" content="website">
 <title>麻将计分器</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 :root {
   --bg: #eef2ed;
@@ -1900,6 +1902,14 @@ function esc(s) {
 
 // ==================== Init ====================
 initSetup();
+</script>
+<script>
+// PWA 注册：离线可用 + 安装到主屏幕；网络优先，线上更新自动热更
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>

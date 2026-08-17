@@ -1,0 +1,16 @@
+{
+  "name": "麻将计分器（广东玩法）",
+  "short_name": "麻将计分器",
+  "description": "四人广东麻将实时计分：选牌型算倍数、庄家买马、一局合并结算、统计表。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef2ed",
+  "theme_color": "#1b4332",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
