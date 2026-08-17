@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1b4332">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="麻将计分器">
+<title>麻将计分器</title>
+<style>
+:root {
+  --bg: #eef2ed;
+  --card-bg: #ffffff;
+  --table-green: #2d6a4f;
+  --table-dark: #1b4332;
+  --table-light: #d8f3dc;
+  --text: #1a1a2e;
+  --text-sec: #6c757d;
+  --positive: #e63946;
+  --negative: #2a9d8f;
+  --zero: #adb5bd;
+  --accent: #40916c;
+  --accent-light: #b7e4c7;
+  --border: #e0e0e0;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --p1: #e63946;
+  --p2: #3a86ff;
+  --p3: #2a9d8f;
+  --p4: #f4a261;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  max-width: 500px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-font-smoothing: antialiased;
+}
+
+.screen { display: none; padding: 16px; }
+.screen.active { display: block; animation: fadeIn 0.3s ease; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes pop { 0% { transform: scale(0.9); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+/* ===== Setup Screen ===== */
+.setup-header { text-align: center; padding: 40px 0 28px; }
+.setup-header .logo { font-size: 56px; }
+.setup-header h1 { font-size: 24px; margin-top: 8px; font-weight: 700; color: var(--table-dark); }
+.setup-header p { font-size: 14px; color: var(--text-sec); margin-top: 4px; }
+
+.section-title {
+  font-size: 15px; font-weight: 600; color: var(--table-dark);
+  margin: 20px 0 10px; display: flex; align-items: center; gap: 6px;
+}
+.section-title::before {
+  content: ''; width: 3px; height: 16px; background: var(--accent); border-radius: 2px;
+}
+
+.player-inputs { display: grid; gap: 10px; }
+.player-input-row { display: flex; align-items: center; gap: 10px; }
+.player-color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.player-input-row input {
+  flex: 1; padding: 12px 14px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 15px; background: var(--card-bg); transition: border-color 0.2s;
+}
+.player-input-row input:focus { outline: none; border-color: var(--accent); }
+
+.config-group {
+  background: var(--card-bg); border-radius: var(--radius); padding: 16px;
+  box-shadow: var(--shadow); margin-top: 8px;
+}
+.config-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+.config-row:last-child { border-bottom: none; }
+.config-row label { font-size: 14px; font-weight: 500; }
+.config-row input[type="number"] {
+  width: 70px; padding: 8px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+  text-align: center; font-size: 15px; font-weight: 600;
+}
+.config-row input[type="number"]:focus { outline: none; border-color: var(--accent); }
+
+.toggle-group { display: flex; gap: 4px; background: #f0f0f0; border-radius: var(--radius-sm); padding: 3px; }
+.toggle-btn {
+  padding: 7px 14px; border: none; background: none; border-radius: 6px;
+  font-size: 13px; font-weight: 500; color: var(--text-sec); cursor: pointer; transition: all 0.2s;
+}
+.toggle-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 6px rgba(64,145,108,0.3); }
+
+.btn-primary {
+  width: 100%; padding: 16px; border: none; border-radius: var(--radius);
+  background: var(--table-green); color: #fff; font-size: 17px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(45,106,79,0.35);
+}
+.btn-primary:active { transform: scale(0.98); }
+.btn-secondary {
+  width: 100%; padding: 14px; border: 2px solid var(--border); border-radius: var(--radius);
+  background: var(--card-bg); color: var(--text); font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; margin-top: 10px;
+}
+.btn-secondary:active { transform: scale(0.98); }
+.btn-secondary.hidden { display: none; }
+
+/* ===== Game Screen ===== */
+.game-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; margin-bottom: 12px;
+}
+.game-header .round-info { font-size: 16px; font-weight: 700; color: var(--table-dark); }
+.game-header .header-actions { display: flex; gap: 8px; }
+.icon-btn {
+  width: 38px; height: 38px; border: none; border-radius: 10px; background: var(--card-bg);
+  font-size: 18px; cursor: pointer; box-shadow: var(--shadow); transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.icon-btn:active { transform: scale(0.92); }
+
+.scoreboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.score-card {
+  background: var(--card-bg); border-radius: var(--radius); padding: 14px;
+  box-shadow: var(--shadow); position: relative; overflow: hidden;
+  transition: all 0.3s; cursor: pointer;
+}
+.score-card::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+}
+.score-card[data-pi="0"]::before { background: var(--p1); }
+.score-card[data-pi="1"]::before { background: var(--p2); }
+.score-card[data-pi="2"]::before { background: var(--p3); }
+.score-card[data-pi="3"]::before { background: var(--p4); }
+.score-card .player-name { font-size: 14px; font-weight: 600; color: var(--text-sec); }
+.score-card .player-score {
+  font-size: 28px; font-weight: 800; margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.score-card .player-rank {
+  position: absolute; top: 10px; right: 10px; font-size: 11px; font-weight: 700;
+  background: #f0f0f0; padding: 2px 8px; border-radius: 10px; color: var(--text-sec);
+}
+.score-card .player-rank.rank-1 { background: #fff3cd; color: #856404; }
+
+/* 本局牌况面板 */
+.hand-panel {
+  background: var(--card-bg); border-radius: var(--radius); padding: 14px;
+  box-shadow: var(--shadow);
+}
+.hand-panel-title { font-size: 15px; font-weight: 700; color: var(--table-dark); margin-bottom: 10px; }
+.hand-section { margin-bottom: 12px; }
+.hand-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.hand-section-label { font-size: 13px; font-weight: 600; color: var(--text-sec); }
+.mini-btn {
+  border: 1px solid var(--accent); color: var(--accent); background: none;
+  font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 8px; cursor: pointer;
+}
+.mini-btn:active { transform: scale(0.96); }
+.hand-empty { font-size: 12px; color: var(--text-sec); }
+.hand-empty-text { font-size: 12px; color: var(--text-sec); }
+.hand-kong-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 10px; background: var(--bg); border-radius: 8px; margin-bottom: 6px; font-size: 13px;
+}
+.row-del {
+  border: none; background: none; color: var(--text-sec); font-size: 18px;
+  cursor: pointer; padding: 6px 10px; flex-shrink: 0;
+}
+.result-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.result-btn {
+  flex: 1; padding: 11px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card-bg); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.result-btn.selected { border-color: var(--accent); background: var(--table-light); color: var(--table-dark); }
+.result-tag { font-size: 13px; font-weight: 600; color: var(--table-dark); }
+.hand-summary {
+  background: var(--bg); border-radius: var(--radius-sm); padding: 10px; margin: 4px 0 12px;
+}
+.hand-summary-title { font-size: 12px; font-weight: 600; color: var(--text-sec); margin-bottom: 6px; }
+.hand-summary-row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
+.hand-summary-row .s-pos { color: var(--positive); font-weight: 700; }
+.hand-summary-row .s-neg { color: var(--negative); font-weight: 700; }
+.hand-summary-row .s-zero { color: var(--zero); }
+.hand-bottom { display: flex; justify-content: space-between; margin-top: 10px; }
+.link-btn {
+  border: none; background: none; color: var(--text-sec); font-size: 13px; cursor: pointer; padding: 8px 6px;
+}
+.link-btn:disabled { opacity: 0.4; cursor: default; }
+
+.score-pos { color: var(--positive); }
+.score-neg { color: var(--negative); }
+.score-zero { color: var(--zero); }
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
+  display: none; z-index: 100; align-items: flex-end; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px;
+  max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); animation: slideUp 0.3s ease;
+}
+.modal-title { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 16px; color: var(--table-dark); }
+.modal-close {
+  position: absolute; top: 16px; right: 20px; font-size: 22px; color: var(--text-sec);
+  cursor: pointer; background: none; border: none; line-height: 1;
+}
+.modal-section { margin-bottom: 16px; }
+.modal-section-label { font-size: 13px; font-weight: 600; color: var(--text-sec); margin-bottom: 8px; }
+.player-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.player-select-btn {
+  padding: 14px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card-bg); font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; position: relative; text-align: center;
+}
+.player-select-btn::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; border-radius: 2px 2px 0 0;
+}
+.player-select-btn[data-pi="0"]::before { background: var(--p1); }
+.player-select-btn[data-pi="1"]::before { background: var(--p2); }
+.player-select-btn[data-pi="2"]::before { background: var(--p3); }
+.player-select-btn[data-pi="3"]::before { background: var(--p4); }
+.player-select-btn.selected { border-color: var(--accent); background: var(--table-light); }
+.player-select-btn:disabled { opacity: 0.35; }
+
+/* 牌型选择 chips */
+.ht-group { margin-bottom: 10px; }
+.ht-group-label { font-size: 12px; font-weight: 600; color: var(--text-sec); margin-bottom: 6px; }
+.ht-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ht-chip {
+  padding: 8px 12px; border-radius: 20px; border: 2px solid var(--border);
+  background: var(--card-bg); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; color: var(--text); line-height: 1.2;
+}
+.ht-chip .ht-mult { color: var(--accent); font-weight: 700; margin-left: 2px; }
+.ht-chip.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ht-chip.selected .ht-mult { color: #fff; }
+.ht-chip:active { transform: scale(0.97); }
+
+/* 马匹计数选择行：同一人可中多匹 */
+#horse-grid, #kong-horse-grid { display: flex; flex-direction: column; gap: 8px; }
+.horse-counter {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card-bg); font-size: 15px; font-weight: 600;
+}
+.horse-counter.selected { border-color: var(--accent); background: var(--table-light); }
+.horse-counter .horse-name { flex: 1; }
+.horse-ctrl { display: flex; align-items: center; gap: 8px; }
+.horse-ctrl button {
+  width: 34px; height: 34px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card-bg); font-size: 18px; font-weight: 700; cursor: pointer; line-height: 1;
+  color: var(--text);
+}
+.horse-ctrl button:active { transform: scale(0.92); }
+.horse-ctrl button:disabled { opacity: 0.3; cursor: default; }
+.horse-ctrl .horse-n { min-width: 52px; text-align: center; font-size: 13px; color: var(--accent); font-weight: 700; }
+
+.preview-box {
+  background: #f8f9fa; border-radius: var(--radius-sm); padding: 14px; margin: 16px 0;
+}
+.preview-box .preview-title { font-size: 12px; color: var(--text-sec); margin-bottom: 8px; font-weight: 600; }
+.preview-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; font-weight: 600; }
+.preview-row .preview-name { color: var(--text-sec); }
+.preview-row .preview-change { font-variant-numeric: tabular-nums; }
+
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.modal-actions .btn-primary { flex: 1; }
+.modal-actions .btn-cancel {
+  flex: 1; padding: 16px; border: 2px solid var(--border); border-radius: var(--radius);
+  background: var(--card-bg); font-size: 16px; font-weight: 600; cursor: pointer; color: var(--text-sec);
+}
+
+/* ===== Settlement Screen ===== */
+.settlement-title { text-align: center; font-size: 22px; font-weight: 800; color: var(--table-dark); padding: 20px 0 12px; }
+.standings { display: grid; gap: 8px; margin-bottom: 20px; }
+.standing-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--card-bg); border-radius: var(--radius); padding: 14px 16px;
+  box-shadow: var(--shadow); position: relative; overflow: hidden;
+}
+.standing-row::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+.standing-row[data-pi="0"]::before { background: var(--p1); }
+.standing-row[data-pi="1"]::before { background: var(--p2); }
+.standing-row[data-pi="2"]::before { background: var(--p3); }
+.standing-row[data-pi="3"]::before { background: var(--p4); }
+.standing-row .st-left { display: flex; align-items: center; gap: 10px; }
+.standing-row .st-rank { font-size: 20px; font-weight: 800; color: var(--text-sec); width: 28px; }
+.standing-row .st-name { font-size: 16px; font-weight: 600; }
+.standing-row .st-score { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.detail-section { margin-bottom: 20px; }
+.detail-title { font-size: 15px; font-weight: 700; color: var(--table-dark); margin-bottom: 10px; }
+.detail-item {
+  background: var(--card-bg); border-radius: var(--radius); padding: 12px 14px;
+  box-shadow: var(--shadow); margin-bottom: 8px;
+}
+.detail-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+.detail-round { font-size: 12px; font-weight: 800; color: var(--text-sec); flex-shrink: 0; }
+.detail-desc { font-size: 12px; color: var(--text); line-height: 1.5; }
+.detail-changes { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.d-pos { color: var(--positive); }
+.d-neg { color: var(--negative); }
+.d-zero { color: var(--zero); }
+
+.transfers-section { margin-bottom: 20px; }
+.transfers-title { font-size: 15px; font-weight: 700; color: var(--table-dark); margin-bottom: 10px; }
+.transfer-item {
+  display: flex; align-items: center; gap: 10px; background: var(--card-bg);
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px;
+  box-shadow: var(--shadow); font-size: 15px;
+}
+.transfer-item .t-from { font-weight: 600; color: var(--negative); }
+.transfer-item .t-arrow { color: var(--text-sec); font-size: 18px; }
+.transfer-item .t-to { font-weight: 600; color: var(--positive); }
+.transfer-item .t-amount { margin-left: auto; font-size: 20px; font-weight: 800; color: var(--table-green); font-variant-numeric: tabular-nums; }
+.transfer-item .t-unit { font-size: 14px; color: var(--text-sec); font-weight: 600; }
+
+.chart-section { background: var(--card-bg); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); margin-bottom: 20px; }
+.chart-title { font-size: 15px; font-weight: 700; color: var(--table-dark); margin-bottom: 12px; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 12px; }
+.chart-legend-item { display: flex; align-items: center; gap: 4px; }
+.chart-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+.settlement-actions { display: grid; gap: 10px; }
+.settlement-actions .btn-primary { background: var(--table-green); }
+.settlement-actions .btn-secondary { margin-top: 0; }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px; border-radius: 24px;
+  font-size: 14px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+</style>
+</head>
+<body>
+
+<!-- ===== Setup Screen ===== -->
+<div id="setup-screen" class="screen active">
+  <div class="setup-header">
+    <div class="logo">🀄</div>
+    <h1>麻将计分器</h1>
+    <p>四人麻将实时计分工具</p>
+  </div>
+
+  <div class="section-title">玩家设置</div>
+  <div class="player-inputs" id="setup-players">
+    <div class="player-input-row">
+      <div class="player-color-dot" style="background:var(--p1)"></div>
+      <input type="text" id="setup-p0" placeholder="玩家1" value="东家" maxlength="6">
+    </div>
+    <div class="player-input-row">
+      <div class="player-color-dot" style="background:var(--p2)"></div>
+      <input type="text" id="setup-p1" placeholder="玩家2" value="南家" maxlength="6">
+    </div>
+    <div class="player-input-row">
+      <div class="player-color-dot" style="background:var(--p3)"></div>
+      <input type="text" id="setup-p2" placeholder="玩家3" value="西家" maxlength="6">
+    </div>
+    <div class="player-input-row">
+      <div class="player-color-dot" style="background:var(--p4)"></div>
+      <input type="text" id="setup-p3" placeholder="玩家4" value="北家" maxlength="6">
+    </div>
+  </div>
+
+  <div class="section-title">规则设置</div>
+  <div class="config-group">
+    <div class="config-row">
+      <label>底分</label>
+      <input type="number" id="cfg-base" value="1" min="0.5" step="0.5">
+    </div>
+    <div class="config-row">
+      <label>胡牌倍数上限（0＝无上限）</label>
+      <input type="number" id="cfg-max-mult" value="100" min="0" step="1">
+    </div>
+    <div style="font-size:12px;color:var(--text-sec);line-height:1.7;padding:10px 0 2px;">
+      杠（固定，无需设置）：暗杠＝底分×1（三家各付）｜明杠＝底分×1.5（点杠人付）｜加杠＝底分×0.5（三家各付）
+      <br>庄家固定买马
+    </div>
+  </div>
+
+  <div style="margin-top: 24px;">
+    <button class="btn-primary" onclick="startGame()">开始游戏</button>
+    <button class="btn-secondary hidden" id="btn-continue" onclick="continueGame()">继续上次游戏</button>
+  </div>
+</div>
+
+<!-- ===== Game Screen ===== -->
+<div id="game-screen" class="screen">
+  <div class="game-header">
+    <div class="round-info" id="round-info">第 1 局</div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="goSetup()" title="设置">⚙️</button>
+      <button class="icon-btn" onclick="showSettlement()" title="结算">📊</button>
+    </div>
+  </div>
+
+  <div class="scoreboard" id="scoreboard"></div>
+  <div style="font-size:11px;color:var(--text-sec);text-align:center;margin:-2px 0 12px;">👆 点玩家卡片可直接换庄</div>
+
+  <div class="hand-panel">
+    <div class="hand-panel-title">🀄 本局牌况</div>
+
+    <div class="hand-section">
+      <div class="hand-section-head">
+        <span class="hand-section-label">杠（可加多条）</span>
+        <button class="mini-btn" onclick="openKongModal()">＋ 添加杠</button>
+      </div>
+      <div id="hand-kongs" class="hand-empty"><span class="hand-empty-text">本局暂无杠</span></div>
+    </div>
+
+    <div class="hand-section">
+      <div class="hand-section-head"><span class="hand-section-label">胡牌</span></div>
+      <div class="result-row">
+        <button class="result-btn" id="result-win" onclick="openWinModal()">🎉 记录胡牌</button>
+      </div>
+      <div id="hand-result" class="hand-empty"><span class="hand-empty-text">尚未记录胡牌</span></div>
+    </div>
+
+    <div class="hand-summary">
+      <div class="hand-summary-title">本局合计（杠＋胡牌）</div>
+      <div id="hand-summary-content"><span class="hand-empty-text">记录胡牌后预览</span></div>
+    </div>
+
+    <button class="btn-primary" onclick="settleHand()" style="margin-top:2px;">💰 结算本局</button>
+
+    <div class="hand-bottom">
+      <button class="link-btn" onclick="clearHand()">清空本局</button>
+      <button class="link-btn" id="btn-undo" onclick="undoLastHand()" disabled>撤销上一局</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Settlement Screen ===== -->
+<div id="settlement-screen" class="screen">
+  <div class="settlement-title">📊 统计表</div>
+  <div class="standings" id="standings"></div>
+  <div class="detail-section">
+    <div class="detail-title">📋 对局明细</div>
+    <div id="hand-details"></div>
+  </div>
+  <div class="transfers-section" id="transfers-section">
+    <div class="transfers-title">💸 转账明细</div>
+    <div id="transfers-list"></div>
+  </div>
+  <div class="chart-section">
+    <div class="chart-title">📈 分数走势</div>
+    <div id="chart-container"></div>
+    <div class="chart-legend" id="chart-legend"></div>
+  </div>
+  <div class="settlement-actions">
+    <button class="btn-primary" onclick="copySettlement()">📋 复制结算单</button>
+    <button class="btn-secondary" onclick="backToGame()">返回游戏</button>
+    <button class="btn-secondary" onclick="confirmNewGame()">🔄 新开一局</button>
+  </div>
+</div>
+
+<!-- ===== Win Modal ===== -->
+<div class="modal-overlay" id="win-modal">
+  <div class="modal" style="position:relative;">
+    <button class="modal-close" onclick="closeModal('win-modal')">✕</button>
+    <div class="modal-title">记录胡牌</div>
+
+    <div class="modal-section">
+      <div class="modal-section-label">赢家</div>
+      <div class="player-select-grid" id="win-player-grid"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-label">胡牌方式</div>
+      <div class="toggle-group" id="win-type" style="display:flex;flex-wrap:wrap;">
+        <button class="toggle-btn active" data-val="zimo" style="flex:1 1 40%;">自摸</button>
+        <button class="toggle-btn" data-val="chihu" style="flex:1 1 40%;">吃胡</button>
+        <button class="toggle-btn" data-val="qianggang" style="flex:1 1 40%;">抢杠</button>
+        <button class="toggle-btn" data-val="gangbao" style="flex:1 1 40%;">杠爆</button>
+      </div>
+    </div>
+
+    <div class="modal-section" id="discarder-section" style="display:none;">
+      <div class="modal-section-label" id="discarder-label">被吃胡的人</div>
+      <div class="player-select-grid" id="discarder-grid"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-label">牌型（可多选，倍数相加；无牌型=平胡 1倍）</div>
+      <div id="handtype-groups"></div>
+      <div class="ht-chips" style="margin-top:10px;">
+        <button class="ht-chip" id="ht-haidi" onclick="toggleHaidi()" style="border-style:dashed;">🌊 海底捞月 ＋3</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-label">倍数（每家付 底分×倍数）</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span style="font-size:18px;font-weight:700;color:var(--table-dark);">×</span>
+        <input type="number" id="mult-input" value="1" min="0" step="0.5" inputmode="decimal" disabled
+          style="flex:1;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:18px;font-weight:700;text-align:center;color:var(--table-dark);">
+      </div>
+      <div style="font-size:12px;color:var(--text-sec);margin-top:6px;" id="mult-pay-hint">每家付 1 分</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <button class="ht-chip" id="ht-custom" onclick="toggleCustomMult()">✏️ 自定义倍数</button>
+        <span style="font-size:12px;color:var(--text-sec);" id="mult-auto-tip">当前按牌型自动计算</span>
+      </div>
+    </div>
+
+    <div class="modal-section" id="horse-section">
+      <div class="modal-section-label">🐴 庄家买马（庄家：<span id="horse-dealer-name"></span>，＋加一匹／−减一匹，同一人可中多匹）中胡牌者＝各输家再赔一份给庄家；中输家＝庄家再输一份给胡牌者（输家不额外付）；中庄家自己＝庄家胡牌各家再赔一份／别人胡牌庄家再输一份</div>
+      <div class="player-select-grid" id="horse-grid"></div>
+    </div>
+
+    <div class="preview-box" id="win-preview">
+      <div class="preview-title">分数变化预览</div>
+      <div id="win-preview-content"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('win-modal')">取消</button>
+      <button class="btn-primary" onclick="confirmWin()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Kong Modal ===== -->
+<div class="modal-overlay" id="kong-modal">
+  <div class="modal" style="position:relative;">
+    <button class="modal-close" onclick="closeModal('kong-modal')">✕</button>
+    <div class="modal-title">记录杠</div>
+
+    <div class="modal-section">
+      <div class="modal-section-label">杠的类型</div>
+      <div class="toggle-group" id="kong-type" style="display:flex;">
+        <button class="toggle-btn active" data-val="an" style="flex:1;">暗杠</button>
+        <button class="toggle-btn" data-val="ming" style="flex:1;">明杠</button>
+        <button class="toggle-btn" data-val="jia" style="flex:1;">加杠</button>
+      </div>
+      <div style="font-size:12px;color:var(--text-sec);margin-top:6px;" id="kong-pay-hint"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-label">杠者</div>
+      <div class="player-select-grid" id="kong-player-grid"></div>
+    </div>
+
+    <div class="modal-section" id="kong-discarder-section" style="display:none;">
+      <div class="modal-section-label">点杠人（付分给杠者）</div>
+      <div class="player-select-grid" id="kong-discarder-grid"></div>
+    </div>
+
+    <div class="modal-section" id="kong-horse-section">
+      <div class="modal-section-label">🐴 马中谁（庄家：<span id="kong-horse-dealer-name"></span>，＋加一匹／−减一匹，同一人可中多匹）中杠者＝庄家赢一份，中付家＝庄家输一份（付家不额外付）</div>
+      <div class="player-select-grid" id="kong-horse-grid"></div>
+    </div>
+
+    <div class="preview-box">
+      <div class="preview-title">分数变化预览</div>
+      <div id="kong-preview-content"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('kong-modal')">取消</button>
+      <button class="btn-primary" onclick="confirmKong()">确认</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== State ====================
+const STORAGE_KEY = 'mahjong_score_v4';
+
+const state = {
+  players: ['东家', '南家', '西家', '北家'],
+  scores: [0, 0, 0, 0],
+  rounds: [],
+  currentHand: { kongs: [], win: null },
+  dealer: 0,
+  config: {
+    baseScore: 1,
+    maxMult: 100,
+    kongAn: 1,
+    kongMing: 1.5,
+    kongJia: 0.5,
+    horseOn: true,
+  },
+  gameStarted: false,
+};
+
+const CONFIG_DEFAULTS = {
+  baseScore: 1,
+  maxMult: 100,
+  kongAn: 1,
+  kongMing: 1.5,
+  kongJia: 0.5,
+  horseOn: true,
+};
+
+// ==================== 牌型目录（28 种，来自《麻将牌型倍数层级与示例》） ====================
+const HAND_TYPE_GROUPS = [
+  { key: 'base', label: '基础牌型（2倍）' },
+  { key: 'mid', label: '中等牌型（3~5倍）' },
+  { key: 'adv', label: '进阶牌型（6~8倍）' },
+  { key: 'high', label: '极高难牌型（10~15倍）' },
+  { key: 'top', label: '顶级稀有牌型（20倍）' },
+];
+
+// excl: 'qidui' 七小对家族互斥 / 'gang' 杠子家族互斥
+const HAND_TYPES = [
+  // 基础牌型
+  { id: 'penpenhu', name: '碰碰胡', mult: 2, group: 'base' },
+  { id: 'hunyise', name: '混一色', mult: 2, group: 'base' },
+  // 中等牌型
+  { id: 'hualong', name: '花龙', mult: 3, group: 'mid' },
+  { id: 'sanfengke', name: '三风刻', mult: 4, group: 'mid' },
+  { id: 'sananke', name: '三暗刻', mult: 5, group: 'mid' },
+  { id: 'santongke', name: '三同刻', mult: 5, group: 'mid' },
+  { id: 'qinglong', name: '清龙', mult: 5, group: 'mid' },
+  { id: 'sanseshuanglonghui', name: '三色双龙会', mult: 5, group: 'mid' },
+  // 进阶牌型
+  { id: 'qixiaodui', name: '七小对', mult: 6, group: 'adv', excl: 'qidui' },
+  { id: 'qingyise', name: '清一色', mult: 6, group: 'adv' },
+  { id: 'hunyaojiu', name: '混幺九', mult: 8, group: 'adv' },
+  { id: 'sangangzi', name: '三杠子', mult: 8, group: 'adv', excl: 'gang' },
+  { id: 'haohuaqixiaodui', name: '豪华七小对', mult: 8, group: 'adv', excl: 'qidui' },
+  // 极高难牌型
+  { id: 'shuanghaohua', name: '双豪华七小对', mult: 12, group: 'high', excl: 'qidui' },
+  { id: 'sigangzi', name: '四杠子', mult: 15, group: 'high', excl: 'gang' },
+  { id: 'qingyaojiu', name: '清幺九', mult: 15, group: 'high' },
+  { id: 'sianke', name: '四暗刻', mult: 15, group: 'high' },
+  { id: 'xiaosixi', name: '小四喜', mult: 15, group: 'high' },
+  { id: 'yiseshuanglonghui', name: '一色双龙会', mult: 15, group: 'high' },
+  { id: 'xiaosanyuan', name: '小三元', mult: 15, group: 'high' },
+  { id: 'dasanyuan', name: '大三元', mult: 15, group: 'high' },
+  { id: 'ziyise', name: '字一色', mult: 15, group: 'high' },
+  // 顶级稀有牌型
+  { id: 'lvyise', name: '绿一色', mult: 20, group: 'top' },
+  { id: 'shisanyao', name: '十三幺', mult: 20, group: 'top' },
+  { id: 'dasixi', name: '大四喜', mult: 20, group: 'top' },
+  { id: 'shibaluohan', name: '十八罗汉', mult: 20, group: 'top', excl: 'gang' },
+  { id: 'jiulianbaodeng', name: '九莲宝灯', mult: 20, group: 'top' },
+  { id: 'sanhaohua', name: '三豪华七小对', mult: 20, group: 'top', excl: 'qidui' },
+];
+
+const HAND_TYPE_MAP = {};
+HAND_TYPES.forEach(t => { HAND_TYPE_MAP[t.id] = t; });
+
+// Modal temp state
+let winState = { winner: -1, type: 'zimo', discarder: -1, mult: 1, customMult: false, types: [], haidi: false, horses: [] };
+let kongState = { type: 'an', maker: -1, discarder: -1, horses: [] };
+
+// ==================== Persistence ====================
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      parsed.config = Object.assign({}, CONFIG_DEFAULTS, parsed.config || {});
+      Object.assign(state, parsed);
+      if (typeof state.dealer !== 'number' || state.dealer < 0 || state.dealer > 3) state.dealer = 0;
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+function hasSavedGame() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.gameStarted && parsed.rounds && parsed.rounds.length > 0;
+    }
+  } catch(e) {}
+  return false;
+}
+
+// ==================== Calculations ====================
+// 每家支付 = 底分 × 倍数
+function perPay(mult) {
+  return state.config.baseScore * mult;
+}
+
+function calcWin(winner, type, discarder, mult) {
+  const pay = perPay(mult);
+  const changes = [0, 0, 0, 0];
+
+  if (type === 'zimo') {
+    for (let i = 0; i < 4; i++) {
+      if (i === winner) changes[i] = +(pay * 3).toFixed(2);
+      else changes[i] = +(-pay).toFixed(2);
+    }
+  } else if (type === 'qianggang' || type === 'gangbao') {
+    // 抢杠：被抢杠者包三家；杠爆：放杠者包三家
+    changes[winner] = +(pay * 3).toFixed(2);
+    changes[discarder] = +(-pay * 3).toFixed(2);
+  } else {
+    // 吃胡：被吃胡者只付自己一份，另两家不付
+    changes[winner] = +pay.toFixed(2);
+    changes[discarder] = +(-pay).toFixed(2);
+  }
+  return changes;
+}
+
+// ===== 统一的马逻辑（胡牌和杠完全一致） =====
+function applyHorse(changes, winner, horse) {
+  const res = [...changes];
+  const D = state.dealer;
+  if (horse < 0) return res;
+  
+  if (horse === D) {
+    // 马中庄家自己
+    if (winner === D) {
+      // 庄家胡牌：各家再赔一份给庄家
+      for (let i = 0; i < 4; i++) {
+        if (i !== D && res[i] < 0) {
+          const loss = -res[i];
+          res[i] = +(res[i] - loss).toFixed(2);
+          res[D] = +(res[D] + loss).toFixed(2);
+        }
+      }
+    } else if (res[D] < 0) {
+      // 庄家是输家：庄家再输一份给胡牌者
+      const loss = -res[D];
+      res[D] = +(res[D] - loss).toFixed(2);
+      res[winner] = +(res[winner] + loss).toFixed(2);
+    }
+    return res;
+  }
+  
+  if (horse === winner) {
+    // 马中胡牌者：各输家多输一份给庄家（庄家赢）
+    for (let i = 0; i < 4; i++) {
+      if (i !== winner && res[i] < 0) {
+        const loss = -res[i];
+        res[i] = +(res[i] - loss).toFixed(2);
+        res[D] = +(res[D] + loss).toFixed(2);
+      }
+    }
+  } else if (res[horse] < 0) {
+    // 马中普通输家：只有庄家输一份给胡牌者，输家本身不额外付
+    const loss = -res[horse];
+    // 输家本身不变（不额外付）
+    // 庄家多输一份给胡牌者
+    res[D] = +(res[D] - loss).toFixed(2);
+    res[winner] = +(res[winner] + loss).toFixed(2);
+  }
+  return res;
+}
+
+// 多匹马：每匹马独立计算增量，再统一叠加
+function applyHorses(baseChanges, winner, horses) {
+  const res = [...baseChanges];
+  if (!Array.isArray(horses) || horses.length === 0) return res;
+  const deltas = [0, 0, 0, 0];
+  horses.forEach(h => {
+    const after = applyHorse(baseChanges, winner, h);
+    for (let i = 0; i < 4; i++) deltas[i] += after[i] - baseChanges[i];
+  });
+  return res.map((v, i) => +(v + deltas[i]).toFixed(2));
+}
+
+// ===== 马描述（胡牌） =====
+function horseNoteText(winner, horse, baseChanges, n) {
+  n = n || 1;
+  if (horse < 0) return '';
+  const D = state.dealer;
+  if (horse === D) {
+    if (winner !== D) {
+      const loss = -baseChanges[D];
+      if (loss > 0) return `🐴 马中庄家 ${state.players[D]}：庄家再输${n}份 ${fmt(loss * n)} 分给胡牌者 ${state.players[winner]}`;
+      return '';
+    }
+    const total = baseChanges[D];
+    return `🐴 马中庄家 ${state.players[D]}（胡牌）：各家再赔${n}份，庄家多赢 ${fmt(total * n)} 分`;
+  }
+  if (horse === winner) {
+    const parts = [];
+    for (let i = 0; i < 4; i++) {
+      if (i !== winner && baseChanges[i] < 0) {
+        parts.push(`${state.players[i]} 再赔 ${fmt(-baseChanges[i] * n)} 给庄家 ${state.players[D]}`);
+      }
+    }
+    if (parts.length > 0) {
+      return `🐴 马中胡牌的 ${state.players[winner]}：${parts.join('、')}`;
+    }
+    return '';
+  }
+  const loss = -baseChanges[horse];
+  if (loss > 0) return `🐴 马中输家 ${state.players[horse]}：庄家 ${state.players[D]} 再输${n}份 ${fmt(loss * n)} 分给胡牌者 ${state.players[winner]}（输家不额外付）`;
+  return '';
+}
+
+function horseNotesText(winner, horses, baseChanges) {
+  if (!Array.isArray(horses) || horses.length === 0) return [];
+  const counts = {};
+  horses.forEach(h => counts[h] = (counts[h] || 0) + 1);
+  return Object.keys(counts).map(hk => {
+    const n = counts[hk];
+    const t = horseNoteText(winner, +hk, baseChanges, n);
+    if (!t) return '';
+    return n > 1 ? t.replace('🐴 马中', `🐴 ${n}匹马中`) : t;
+  }).filter(t => t);
+}
+
+function calcKong(maker, type, discarder) {
+  const { baseScore, kongAn, kongMing, kongJia } = state.config;
+  const changes = [0, 0, 0, 0];
+
+  if (type === 'an' || type === 'jia') {
+    const pay = baseScore * (type === 'an' ? kongAn : kongJia);
+    for (let i = 0; i < 4; i++) {
+      if (i === maker) changes[i] = +(pay * 3).toFixed(2);
+      else changes[i] = +(-pay).toFixed(2);
+    }
+  } else {
+    const pay = baseScore * kongMing;
+    changes[maker] = +pay.toFixed(2);
+    changes[discarder] = +(-pay).toFixed(2);
+  }
+  return changes;
+}
+
+function kongShare(type) {
+  const { baseScore, kongAn, kongMing, kongJia } = state.config;
+  return baseScore * (type === 'an' ? kongAn : type === 'ming' ? kongMing : kongJia);
+}
+
+// ===== 杠的马结算（统一逻辑） =====
+function applyKongHorse(changes, maker, type, discarder, horse) {
+  const res = [...changes];
+  if (horse < 0) return res;
+  const D = state.dealer;
+  const share = kongShare(type);
+  const payers = type === 'ming' ? [discarder] : [0, 1, 2, 3].filter(i => i !== maker);
+
+  if (horse === maker) {
+    payers.forEach(p => {
+      if (p === D) return;
+      res[p] = +(res[p] - share).toFixed(2);
+      res[D] = +(res[D] + share).toFixed(2);
+    });
+  } else if (payers.includes(horse)) {
+    if (D === maker) return res;
+    // 马中付家：只有庄家输一份给杠者，付家不额外付
+    res[D] = +(res[D] - share).toFixed(2);
+    res[maker] = +(res[maker] + share).toFixed(2);
+  }
+  return res;
+}
+
+function kongHorseNotesText(maker, type, discarder, horses) {
+  if (!Array.isArray(horses) || horses.length === 0) return [];
+  const counts = {};
+  horses.forEach(h => counts[h] = (counts[h] || 0) + 1);
+  return Object.keys(counts).map(hk => {
+    const n = counts[hk];
+    const t = kongHorseNoteText(maker, type, discarder, +hk, n);
+    if (!t) return '';
+    return n > 1 ? t.replace('🐴 马中', `🐴 ${n}匹马中`) : t;
+  }).filter(t => t);
+}
+
+function kongHorseNoteText(maker, type, discarder, horse, n) {
+  n = n || 1;
+  if (horse < 0) return '';
+  const D = state.dealer;
+  const share = kongShare(type);
+  const payers = type === 'ming' ? [discarder] : [0, 1, 2, 3].filter(i => i !== maker);
+  // 每个付家在杠本身的基础付款
+  const baseOf = p => (type === 'ming' ? (p === discarder ? share : 0) : share);
+  const horsePay = share * n; // 本目标马数带来的增量
+  if (horse === maker) {
+    if (D === maker) return `🐴 马中庄家 ${state.players[D]}（杠者）：各家再付${n}份 ${fmt(horsePay)} 分（连杠共付 ${fmt(share + horsePay)} 分）`;
+    return `🐴 马中杠者 ${state.players[maker]}：庄家 ${state.players[D]} 跟着赢，${payers.filter(p => p !== D).map(p => state.players[p]).join('、')} 各共付 ${fmt(share + horsePay)} 分（杠${fmt(share)}＋马${fmt(horsePay)}）`;
+  }
+  if (payers.includes(horse)) {
+    if (D === maker) return '';
+    if (horse === D) return `🐴 马中庄家 ${state.players[D]}（付家）：庄家共付 ${fmt(share + horsePay)} 分给杠者（杠${fmt(share)}＋马${fmt(horsePay)}；付家不额外付）`;
+    return `🐴 马中付家 ${state.players[horse]}：庄家 ${state.players[D]} 跟着输，共付 ${fmt(baseOf(D) + horsePay)} 分给杠者 ${state.players[maker]}（付家不额外付）`;
+  }
+  return '';
+}
+
+function applyKongHorses(baseChanges, maker, type, discarder, horses) {
+  const res = [...baseChanges];
+  if (!Array.isArray(horses) || horses.length === 0) return res;
+  const deltas = [0, 0, 0, 0];
+  horses.forEach(h => {
+    const after = applyKongHorse(baseChanges, maker, type, discarder, h);
+    for (let i = 0; i < 4; i++) deltas[i] += after[i] - baseChanges[i];
+  });
+  return res.map((v, i) => +(v + deltas[i]).toFixed(2));
+}
+
+function calculateSettlement() {
+  const balances = state.players.map((name, i) => ({ name, balance: state.scores[i], pi: i }));
+  const creditors = balances.filter(b => b.balance > 0.001).sort((a, b) => b.balance - a.balance);
+  const debtors = balances.filter(b => b.balance < -0.001).sort((a, b) => a.balance - b.balance);
+
+  const transfers = [];
+  let ci = 0, di = 0;
+  let cBal = creditors.length ? creditors[ci].balance : 0;
+  let dBal = debtors.length ? debtors[di].balance : 0;
+
+  while (ci < creditors.length && di < debtors.length) {
+    const amount = Math.min(cBal, -dBal);
+    if (amount > 0.001) {
+      transfers.push({ from: debtors[di], to: creditors[ci], amount: +amount.toFixed(2) });
+    }
+    cBal -= amount;
+    dBal += amount;
+    if (cBal < 0.001) { ci++; if (ci < creditors.length) cBal = creditors[ci].balance; }
+    if (dBal > -0.001) { di++; if (di < debtors.length) dBal = debtors[di].balance; }
+  }
+  return transfers;
+}
+
+// ==================== Rendering ====================
+function renderScoreboard() {
+  const sb = document.getElementById('scoreboard');
+  const ranked = state.scores.map((s, i) => ({ s, i })).sort((a, b) => b.s - a.s);
+  const ranks = {};
+  ranked.forEach((r, idx) => { ranks[r.i] = idx + 1; });
+
+  sb.innerHTML = state.players.map((name, i) => {
+    const score = state.scores[i];
+    const cls = score > 0 ? 'score-pos' : score < 0 ? 'score-neg' : 'score-zero';
+    const sign = score > 0 ? '+' : '';
+    const rankCls = ranks[i] === 1 ? 'rank-1' : '';
+    const dealerBadge = i === state.dealer
+      ? '<span style="position:absolute;bottom:10px;right:10px;font-size:11px;font-weight:700;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:10px;">庄</span>'
+      : '';
+    return `<div class="score-card" data-pi="${i}" onclick="setDealer(${i})" title="设 ${esc(name)} 为庄家">
+      <div class="player-rank ${rankCls}">第${ranks[i]}</div>
+      <div class="player-name">${esc(name)}</div>
+      <div class="player-score ${cls}">${sign}${fmt(score)}</div>
+      ${dealerBadge}
+    </div>`;
+  }).join('');
+}
+
+function renderWinPreview() {
+  const el = document.getElementById('win-preview-content');
+  if (winState.winner < 0) {
+    el.innerHTML = '<div style="color:var(--text-sec);font-size:13px;">请选择赢家</div>';
+    return;
+  }
+  const needsDiscarder = winState.type === 'chihu' || winState.type === 'qianggang' || winState.type === 'gangbao';
+  if (needsDiscarder && winState.discarder < 0) {
+    el.innerHTML = '<div style="color:var(--text-sec);font-size:13px;">请选择被吃胡/被抢杠/放杠的人</div>';
+    return;
+  }
+  const baseChanges = calcWin(winState.winner, winState.type, winState.discarder, winState.mult);
+  const winChanges = state.config.horseOn
+    ? applyHorses(baseChanges, winState.winner, winState.horses)
+    : baseChanges;
+  const kongChanges = sumChanges((state.currentHand || {}).kongs);
+  const changes = winChanges.map((v, i) => +(v + kongChanges[i]).toFixed(2));
+  const horseNotes = state.config.horseOn ? horseNotesText(winState.winner, winState.horses, baseChanges) : [];
+  const handKongs = (state.currentHand || {}).kongs || [];
+  const kongNote = handKongs.length > 0
+    ? `<div style="font-size:12px;color:var(--text-sec);margin-top:4px;">本局另有 ${handKongs.length} 条杠将一并结算</div>`
+    : '';
+  const noteHtml = (horseNotes.length > 0 || kongNote)
+    ? `<div style="font-size:12px;color:var(--accent);margin-top:6px;font-weight:600;white-space:pre-line;">${esc(horseNotes.join('\n'))}</div>${kongNote}`
+    : '';
+  el.innerHTML = changes.map((c, i) => {
+    const sign = c > 0 ? '+' : '';
+    const cls = c > 0 ? 'score-pos' : c < 0 ? 'score-neg' : 'score-zero';
+    return `<div class="preview-row">
+      <span class="preview-name">${esc(state.players[i])}</span>
+      <span class="preview-change ${cls}">${sign}${fmt(c)}</span>
+    </div>`;
+  }).join('') + noteHtml;
+}
+
+function renderKongPreview() {
+  const el = document.getElementById('kong-preview-content');
+  if (kongState.maker < 0) {
+    el.innerHTML = '<div style="color:var(--text-sec);font-size:13px;">请选择杠者</div>';
+    return;
+  }
+  if (kongState.type === 'ming' && kongState.discarder < 0) {
+    el.innerHTML = '<div style="color:var(--text-sec);font-size:13px;">请选择点杠人</div>';
+    return;
+  }
+  const baseChanges = calcKong(kongState.maker, kongState.type, kongState.discarder);
+  const changes = state.config.horseOn
+    ? applyKongHorses(baseChanges, kongState.maker, kongState.type, kongState.discarder, kongState.horses)
+    : baseChanges;
+  const horseNotes = state.config.horseOn
+    ? kongHorseNotesText(kongState.maker, kongState.type, kongState.discarder, kongState.horses)
+    : [];
+  const noteHtml = horseNotes.length > 0
+    ? `<div style="font-size:12px;color:var(--accent);margin-top:6px;font-weight:600;white-space:pre-line;">${esc(horseNotes.join('\n'))}</div>`
+    : '';
+  el.innerHTML = changes.map((c, i) => {
+    const sign = c > 0 ? '+' : '';
+    const cls = c > 0 ? 'score-pos' : c < 0 ? 'score-neg' : 'score-zero';
+    return `<div class="preview-row">
+      <span class="preview-name">${esc(state.players[i])}</span>
+      <span class="preview-change ${cls}">${sign}${fmt(c)}</span>
+    </div>`;
+  }).join('') + noteHtml;
+}
+
+function renderSettlement() {
+  const standings = document.getElementById('standings');
+  const sorted = state.players.map((name, i) => ({ name, score: state.scores[i], pi: i }))
+    .sort((a, b) => b.score - a.score);
+  const medals = ['🥇', '🥈', '🥉', '4️⃣'];
+  standings.innerHTML = sorted.map((p, idx) => {
+    const cls = p.score > 0 ? 'score-pos' : p.score < 0 ? 'score-neg' : 'score-zero';
+    const sign = p.score > 0 ? '+' : '';
+    return `<div class="standing-row" data-pi="${p.pi}">
+      <div class="st-left">
+        <span class="st-rank">${medals[idx]}</span>
+        <span class="st-name">${esc(p.name)}</span>
+      </div>
+      <div class="st-score ${cls}">${sign}${fmt(p.score)}</div>
+    </div>`;
+  }).join('');
+
+  const transfers = calculateSettlement();
+  const tList = document.getElementById('transfers-list');
+  const tSection = document.getElementById('transfers-section');
+  if (transfers.length === 0) {
+    tSection.style.display = 'none';
+  } else {
+    tSection.style.display = 'block';
+    tList.innerHTML = transfers.map(t => {
+      return `<div class="transfer-item">
+        <span class="t-from">${esc(t.from.name)}</span>
+        <span class="t-arrow">→</span>
+        <span class="t-to">${esc(t.to.name)}</span>
+        <span class="t-amount">${fmt(t.amount)}<span class="t-unit"> 分</span></span>
+      </div>`;
+    }).join('');
+  }
+
+  renderHandDetails();
+  renderChart();
+}
+
+function winHorseDesc(r) {
+  const dAt = typeof r.dealerAt === 'number' ? r.dealerAt : state.dealer;
+  const horses = Array.isArray(r.horses) ? r.horses : [];
+  if (horses.length === 0) return '';
+  const hCounts = {};
+  horses.forEach(h => hCounts[h] = (hCounts[h] || 0) + 1);
+  const parts = [];
+  Object.keys(hCounts).forEach(hk => {
+    const h = +hk, n = hCounts[hk];
+    if (h === r.winner && h === dAt) {
+      parts.push(`马中庄家（胡牌）×${n}，各家再赔${n}份`);
+    } else if (h === r.winner) {
+      const loserParts = [];
+      for (let i = 0; i < 4; i++) {
+        if (i !== r.winner && r.baseChanges && r.baseChanges[i] < 0) {
+          loserParts.push(`${esc(state.players[i])} 再赔 ${fmt(-r.baseChanges[i] * n)} 给庄家 ${esc(state.players[dAt])}`);
+        }
+      }
+      if (loserParts.length > 0) parts.push(`马中胡牌者×${n}：${loserParts.join('、')}`);
+    } else if (h === dAt) {
+      const dealerLoss = r.baseChanges ? -(r.baseChanges[dAt] || 0) : null;
+      if (dealerLoss === null || dealerLoss > 0) {
+        parts.push(`马中庄家（自己）×${n}，庄家再输${n}份给${esc(state.players[r.winner])}`);
+      }
+    } else {
+      parts.push(`马中输家 ${esc(state.players[h])}×${n}：庄家再输${n}份给${esc(state.players[r.winner])}（输家不额外付）`);
+    }
+  });
+  return parts.length > 0 ? '🐴' + parts.join('；') : '';
+}
+
+function renderHandDetails() {
+  const wrap = document.getElementById('hand-details');
+  if (!wrap) return;
+  if (state.rounds.length === 0) {
+    wrap.innerHTML = '<div style="font-size:12px;color:var(--text-sec);padding:6px 0;">暂无对局</div>';
+    return;
+  }
+  wrap.innerHTML = state.rounds.map((r, i) => {
+    const kongs = Array.isArray(r.kongs) ? r.kongs : [];
+    let desc = kongs.map(k => kongEntryDesc(k)).join('；');
+    if (desc) desc += '；';
+    desc += winEntryText(r);
+    const horseDesc = winHorseDesc(r);
+    if (horseDesc) desc += '　' + horseDesc;
+    const changesStr = r.changes.map((c, pi) => {
+      const sign = c > 0 ? '+' : '';
+      const cls = c > 0 ? 'd-pos' : c < 0 ? 'd-neg' : 'd-zero';
+      return `<span class="${cls}">${esc(state.players[pi])} ${sign}${fmt(c)}</span>`;
+    }).join('　');
+    return `<div class="detail-item">
+      <div class="detail-head"><span class="detail-round">第 ${i + 1} 局</span><span class="detail-desc">${desc}</span></div>
+      <div class="detail-changes">${changesStr}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderChart() {
+  const container = document.getElementById('chart-container');
+  const legend = document.getElementById('chart-legend');
+  const colors = ['#e63946', '#3a86ff', '#2a9d8f', '#f4a261'];
+
+  const data = [[0,0,0,0]];
+  let cum = [0, 0, 0, 0];
+  state.rounds.forEach(r => {
+    if (r.changes) {
+      cum = cum.map((v, i) => v + r.changes[i]);
+    }
+    data.push([...cum]);
+  });
+
+  const maxRounds = data.length;
+  const allValues = data.flat();
+  const maxVal = Math.max(...allValues, 1);
+  const minVal = Math.min(...allValues, -1);
+
+  const W = 420, H = 200, padL = 36, padR = 12, padT = 12, padB = 24;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const xStep = maxRounds > 1 ? plotW / (maxRounds - 1) : 0;
+
+  const yMax = Math.ceil(maxVal);
+  const yMin = Math.floor(minVal);
+  const yTicks = [];
+  const tickCount = 4;
+  for (let i = 0; i <= tickCount; i++) {
+    const val = yMin + (yMax - yMin) * i / tickCount;
+    const y = padT + plotH - ((val - yMin) / (yMax - yMin)) * plotH;
+    yTicks.push(`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#f0f0f0" stroke-width="1"/><text x="${padL-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#999">${Math.round(val)}</text>`);
+  }
+
+  const zeroY = padT + plotH - ((0 - yMin) / (yMax - yMin)) * plotH;
+
+  const lines = colors.map((color, pi) => {
+    const points = data.map((d, ri) => {
+      const x = padL + ri * xStep;
+      const y = padT + plotH - ((d[pi] - yMin) / (yMax - yMin)) * plotH;
+      return `${x},${y}`;
+    }).join(' ');
+    return `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }).join('');
+
+  const xLabels = [];
+  const xLabelStep = Math.ceil(maxRounds / 6);
+  for (let i = 0; i < maxRounds; i += xLabelStep) {
+    const x = padL + i * xStep;
+    xLabels.push(`<text x="${x}" y="${H-6}" text-anchor="middle" font-size="10" fill="#999">${i}</text>`);
+  }
+
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;">
+    ${yTicks.join('')}
+    <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="#ddd" stroke-width="1" stroke-dasharray="3,3"/>
+    ${lines}
+    ${xLabels.join('')}
+  </svg>`;
+
+  legend.innerHTML = state.players.map((name, i) => {
+    return `<div class="chart-legend-item">
+      <div class="chart-legend-dot" style="background:${colors[i]}"></div>
+      <span>${esc(name)}</span>
+    </div>`;
+  }).join('');
+}
+
+// ==================== Setup ====================
+function initSetup() {
+  document.getElementById('cfg-base').value = state.config.baseScore;
+  document.getElementById('cfg-max-mult').value = state.config.maxMult;
+
+  for (let i = 0; i < 4; i++) {
+    const input = document.getElementById(`setup-p${i}`);
+    input.value = state.players[i];
+  }
+
+  document.getElementById('btn-continue').classList.toggle('hidden', !hasSavedGame());
+}
+
+function readSetupConfig() {
+  state.config.baseScore = parseFloat(document.getElementById('cfg-base').value) || 1;
+  state.config.maxMult = parseFloat(document.getElementById('cfg-max-mult').value);
+  if (!Number.isFinite(state.config.maxMult) || state.config.maxMult < 0) state.config.maxMult = 0;
+  for (let i = 0; i < 4; i++) {
+    const val = document.getElementById(`setup-p${i}`).value.trim();
+    state.players[i] = val || `玩家${i + 1}`;
+  }
+}
+
+function startGame() {
+  readSetupConfig();
+  state.scores = [0, 0, 0, 0];
+  state.rounds = [];
+  state.currentHand = { kongs: [], win: null };
+  state.dealer = 0;
+  state.gameStarted = true;
+  saveState();
+  showScreen('game');
+  renderGame();
+  showToast('游戏开始！');
+}
+
+function continueGame() {
+  loadState();
+  showScreen('game');
+  renderGame();
+  showToast('已恢复上次游戏');
+}
+
+function goSetup() {
+  showScreen('setup');
+  initSetup();
+}
+
+// ==================== Game ====================
+function renderGame() {
+  const roundEl = document.getElementById('round-info');
+  roundEl.innerHTML = `第 ${state.rounds.length + 1} 局 ｜ 庄：<b>${esc(state.players[state.dealer])}</b>`;
+  renderScoreboard();
+  renderHandPanel();
+  document.getElementById('btn-undo').disabled = state.rounds.length === 0;
+}
+
+function setDealer(i) {
+  state.dealer = i;
+  saveState();
+  renderGame();
+  showToast(`庄家：${state.players[state.dealer]}`);
+}
+
+function settleHand() {
+  const hand = state.currentHand || { kongs: [], win: null };
+  if (!hand.win) { showToast('请先记录胡牌'); return; }
+  const kongChanges = sumChanges(hand.kongs);
+  const winChanges = hand.win.changes || [0, 0, 0, 0];
+  const changes = winChanges.map((v, i) => +(v + kongChanges[i]).toFixed(2));
+  state.scores = state.scores.map((s, i) => +(s + changes[i]).toFixed(2));
+  state.rounds.push({ type: 'win', ...hand.win, kongs: [...(hand.kongs || [])], changes });
+  state.dealer = hand.win.winner; // 谁胡谁坐庄
+  state.currentHand = { kongs: [], win: null };
+  saveState();
+  renderGame();
+  showToast(`第 ${state.rounds.length} 局已结算`);
+}
+
+function undoLastHand() {
+  if (state.rounds.length === 0) return;
+  const last = state.rounds.pop();
+  if (last.changes) {
+    state.scores = state.scores.map((s, i) => +(s - last.changes[i]).toFixed(2));
+  }
+  if (typeof last.dealerBefore === 'number') state.dealer = last.dealerBefore;
+  saveState();
+  renderGame();
+  showToast('已撤销上一局');
+}
+
+function clearHand() {
+  state.currentHand = { kongs: [], win: null };
+  saveState();
+  renderGame();
+  showToast('已清空本局输入');
+}
+
+// ===== 本局牌况 =====
+function sumChanges(list) {
+  const res = [0, 0, 0, 0];
+  (list || []).forEach(k => {
+    if (!k.changes) return;
+    for (let i = 0; i < 4; i++) res[i] += k.changes[i];
+  });
+  return res.map(v => +v.toFixed(2));
+}
+
+function kongEntryDesc(k) {
+  const kongName = k.kongType === 'an' ? '暗杠' : k.kongType === 'ming' ? '明杠' : '加杠';
+  let d = `${esc(state.players[k.maker])} ${kongName}`;
+  if (k.kongType === 'ming') d += `（${esc(state.players[k.discarder])}付）`;
+  else d += '（三家各付）';
+  const horses = Array.isArray(k.horses) ? k.horses : [];
+  const dAt = typeof k.dealerAt === 'number' ? k.dealerAt : state.dealer;
+  const hCounts = {};
+  horses.forEach(h => hCounts[h] = (hCounts[h] || 0) + 1);
+  Object.keys(hCounts).forEach(hk => {
+    const h = +hk, n = hCounts[hk];
+    if (h === k.maker) {
+      if (dAt === k.maker) d += ` 🐴马中庄家（杠者）×${n}，各家再付${n}份`;
+      else d += ` 🐴马中杠者×${n}，庄家${esc(state.players[dAt])}赢${n}份`;
+    } else if (h === dAt) {
+      d += ` 🐴马中庄家（付家）×${n}，庄家再输${n}份`;
+    } else if (k.kongType === 'ming' && h === k.discarder) {
+      d += ` 🐴马中点杠人×${n}，庄家${esc(state.players[dAt])}输${n}份`;
+    } else if (k.kongType !== 'ming') {
+      d += ` 🐴马中付家${esc(state.players[h])}×${n}，庄家${esc(state.players[dAt])}输${n}份`;
+    }
+  });
+  return d;
+}
+
+function winEntryText(w) {
+  const typeName = w.winType === 'zimo' ? '自摸'
+    : w.winType === 'chihu' ? '吃胡'
+    : w.winType === 'qianggang' ? '抢杠胡'
+    : w.winType === 'gangbao' ? '杠爆胡'
+    : '胡';
+  const loserTag = w.winType === 'chihu' ? `（${esc(state.players[w.discarder])}被吃胡）`
+    : w.winType === 'qianggang' ? `（${esc(state.players[w.discarder])}被抢杠）`
+    : w.winType === 'gangbao' ? `（${esc(state.players[w.discarder])}放杠）`
+    : '';
+  const typeTags = (Array.isArray(w.types) ? w.types : []).map(id => (HAND_TYPE_MAP[id] || {}).name || '').filter(Boolean);
+  let d = `${esc(state.players[w.winner])} ${typeName} ×${fmt(w.mult)}倍${loserTag}`;
+  if (w.haidi) d += '（海底捞月）';
+  if (typeTags.length > 0) d += `【${typeTags.join('、')}】`;
+  return d;
+}
+
+function renderHandPanel() {
+  const hand = state.currentHand || { kongs: [], win: null };
+  const kongsEl = document.getElementById('hand-kongs');
+  const resEl = document.getElementById('hand-result');
+  const sumEl = document.getElementById('hand-summary-content');
+  if (!kongsEl || !resEl || !sumEl) return;
+
+  if (!hand.kongs || hand.kongs.length === 0) {
+    kongsEl.innerHTML = '<span class="hand-empty-text">本局暂无杠</span>';
+  } else {
+    kongsEl.innerHTML = hand.kongs.map((k, i) =>
+      `<div class="hand-kong-row"><span>${kongEntryDesc(k)}</span><button class="row-del" onclick="removeHandKong(${i})" title="移除这条杠">✕</button></div>`
+    ).join('');
+  }
+
+  if (hand.win) {
+    resEl.innerHTML = `<span class="result-tag">🎉 ${winEntryText(hand.win)}</span>`;
+  } else {
+    resEl.innerHTML = '<span class="hand-empty-text">尚未记录胡牌</span>';
+  }
+  const winBtn = document.getElementById('result-win');
+  if (winBtn) winBtn.classList.toggle('selected', !!hand.win);
+
+  if (!hand.win) {
+    sumEl.innerHTML = '<span class="hand-empty-text">记录胡牌后预览</span>';
+    return;
+  }
+  const kongChanges = sumChanges(hand.kongs);
+  const winChanges = hand.win.changes || [0, 0, 0, 0];
+  const changes = winChanges.map((v, i) => +(v + kongChanges[i]).toFixed(2));
+  sumEl.innerHTML = changes.map((c, i) => {
+    const cls = c > 0 ? 's-pos' : c < 0 ? 's-neg' : 's-zero';
+    const sign = c > 0 ? '+' : '';
+    return `<div class="hand-summary-row"><span>${esc(state.players[i])}</span><span class="${cls}">${sign}${fmt(c)}</span></div>`;
+  }).join('');
+}
+
+function removeHandKong(i) {
+  const hand = state.currentHand || { kongs: [], win: null };
+  if (!hand.kongs || i < 0 || i >= hand.kongs.length) return;
+  hand.kongs.splice(i, 1);
+  saveState();
+  renderGame();
+}
+
+// ==================== Win Modal ====================
+function openWinModal() {
+  winState = { winner: -1, type: 'zimo', discarder: -1, mult: 1, customMult: false, types: [], haidi: false, horses: [] };
+  renderWinPlayerGrid();
+  renderDiscarderGrid();
+  renderHorseGrid();
+  renderHandTypeGroups();
+  renderWinPreview();
+
+  const multInput = document.getElementById('mult-input');
+  multInput.oninput = () => {
+    const v = parseFloat(multInput.value);
+    winState.mult = Number.isFinite(v) && v > 0 ? v : 1;
+    localStorage.setItem('mj_last_mult', winState.mult);
+    updateMultHint();
+    renderWinPreview();
+  };
+  syncCustomUI();
+  syncMultUI();
+
+  document.getElementById('horse-section').style.display = state.config.horseOn ? 'block' : 'none';
+
+  document.querySelectorAll('#win-type .toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.val === 'zimo');
+    btn.onclick = () => {
+      document.querySelectorAll('#win-type .toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      winState.type = btn.dataset.val;
+      winState.discarder = -1;
+      document.getElementById('discarder-section').style.display = winState.type === 'zimo' ? 'none' : 'block';
+      updateDiscarderLabel();
+      renderDiscarderGrid();
+      renderWinPreview();
+    };
+  });
+
+  document.getElementById('discarder-section').style.display = 'none';
+  document.getElementById('win-modal').classList.add('active');
+}
+
+function renderWinPlayerGrid() {
+  const grid = document.getElementById('win-player-grid');
+  grid.innerHTML = state.players.map((name, i) => {
+    return `<button class="player-select-btn ${winState.winner === i ? 'selected' : ''}" data-pi="${i}" onclick="selectWinWinner(${i})">${esc(name)}</button>`;
+  }).join('');
+}
+
+function selectWinWinner(i) {
+  winState.winner = i;
+  if (winState.discarder === i) winState.discarder = -1;
+  renderWinPlayerGrid();
+  renderDiscarderGrid();
+  renderHorseGrid();
+  renderWinPreview();
+}
+
+function renderHorseGrid() {
+  const grid = document.getElementById('horse-grid');
+  document.getElementById('horse-dealer-name').textContent = state.players[state.dealer];
+  const total = winState.horses.length;
+  let html = `<button class="player-select-btn ${total === 0 ? 'selected' : ''}" onclick="clearHorses()" style="color:var(--text-sec);">未中马${total > 0 ? `（已买 ${total} 匹，点此清空）` : ''}</button>`;
+  html += state.players.map((name, i) => {
+    const n = winState.horses.filter(h => h === i).length;
+    const tag = i === winState.winner && i === state.dealer ? '（庄·胡）'
+      : i === winState.winner ? '（胡）'
+      : i === state.dealer ? '（庄）' : '';
+    return `<div class="horse-counter ${n > 0 ? 'selected' : ''}" data-pi="${i}">
+      <span class="horse-name">${esc(name)}${tag}</span>
+      <span class="horse-ctrl">
+        <button onclick="decHorse(${i})" ${n === 0 ? 'disabled' : ''} aria-label="减一匹">−</button>
+        <span class="horse-n">${n > 0 ? '🐴×' + n : '—'}</span>
+        <button onclick="incHorse(${i})" aria-label="加一匹">＋</button>
+      </span>
+    </div>`;
+  }).join('');
+  grid.innerHTML = html;
+}
+
+function incHorse(i) {
+  winState.horses.push(i);
+  renderHorseGrid();
+  renderWinPreview();
+}
+
+function decHorse(i) {
+  const idx = winState.horses.indexOf(i);
+  if (idx >= 0) winState.horses.splice(idx, 1);
+  renderHorseGrid();
+  renderWinPreview();
+}
+
+function clearHorses() {
+  winState.horses = [];
+  renderHorseGrid();
+  renderWinPreview();
+}
+
+function renderDiscarderGrid() {
+  const grid = document.getElementById('discarder-grid');
+  grid.innerHTML = state.players.map((name, i) => {
+    const disabled = i === winState.winner;
+    return `<button class="player-select-btn ${winState.discarder === i ? 'selected' : ''}" data-pi="${i}" ${disabled ? 'disabled' : ''} onclick="selectDiscarder(${i})">${esc(name)}</button>`;
+  }).join('');
+}
+
+function selectDiscarder(i) {
+  winState.discarder = i;
+  renderDiscarderGrid();
+  renderWinPreview();
+}
+
+function updateMultHint() {
+  const hint = document.getElementById('mult-pay-hint');
+  if (!hint) return;
+  hint.textContent = `每家付 ${fmt(perPay(winState.mult))} 分（底分 ${fmt(state.config.baseScore)} × ${fmt(winState.mult)}）`;
+}
+
+// ===== 牌型选择与倍数计算 =====
+function effectiveMult() {
+  let m;
+  if (winState.customMult) {
+    m = winState.mult;
+  } else {
+    m = 0;
+    winState.types.forEach(id => {
+      const t = HAND_TYPE_MAP[id];
+      if (t) m += t.mult;
+    });
+    if (winState.haidi) m += 3;
+    m = Math.max(1, m); // 平胡 = 1倍
+  }
+  const cap = state.config.maxMult;
+  if (cap > 0 && m > cap) return cap; // 胡牌倍数上限
+  return m;
+}
+
+function renderHandTypeGroups() {
+  const wrap = document.getElementById('handtype-groups');
+  if (!wrap) return;
+  wrap.innerHTML = HAND_TYPE_GROUPS.map(g => {
+    const chips = HAND_TYPES.filter(t => t.group === g.key).map(t => {
+      const sel = winState.types.indexOf(t.id) >= 0;
+      return `<button class="ht-chip ${sel ? 'selected' : ''}" onclick="selectHandType('${t.id}')">${t.name}<span class="ht-mult">×${t.mult}</span></button>`;
+    }).join('');
+    return `<div class="ht-group"><div class="ht-group-label">${g.label}</div><div class="ht-chips">${chips}</div></div>`;
+  }).join('');
+  const haidiBtn = document.getElementById('ht-haidi');
+  if (haidiBtn) haidiBtn.classList.toggle('selected', winState.haidi);
+}
+
+function selectHandType(id) {
+  const t = HAND_TYPE_MAP[id];
+  if (!t) return;
+  if (winState.types.indexOf(id) >= 0) {
+    winState.types = winState.types.filter(x => x !== id);
+  } else {
+    if (t.excl) {
+      // 互斥家族：移除同组其它牌型
+      winState.types = winState.types.filter(x => {
+        const tx = HAND_TYPE_MAP[x];
+        return !(tx && tx.excl === t.excl);
+      });
+    }
+    winState.types.push(id);
+  }
+  winState.customMult = false; // 选了牌型就回到自动计算
+  renderHandTypeGroups();
+  syncCustomUI();
+  syncMultUI();
+  renderWinPreview();
+}
+
+function toggleHaidi() {
+  winState.haidi = !winState.haidi;
+  winState.customMult = false;
+  renderHandTypeGroups();
+  syncCustomUI();
+  syncMultUI();
+  renderWinPreview();
+}
+
+function toggleCustomMult() {
+  winState.customMult = !winState.customMult;
+  if (winState.customMult) winState.mult = effectiveMult();
+  syncCustomUI();
+  syncMultUI();
+  renderWinPreview();
+}
+
+function syncCustomUI() {
+  const btn = document.getElementById('ht-custom');
+  const tip = document.getElementById('mult-auto-tip');
+  const input = document.getElementById('mult-input');
+  if (btn) btn.classList.toggle('selected', winState.customMult);
+  if (input) input.disabled = !winState.customMult;
+  if (tip) tip.textContent = winState.customMult ? '当前为自定义倍数' : '当前按牌型自动计算';
+}
+
+function syncMultUI() {
+  winState.mult = effectiveMult();
+  const input = document.getElementById('mult-input');
+  if (input) input.value = winState.mult;
+  updateMultHint();
+}
+
+const DISCARDER_LABELS = {
+  chihu: '被吃胡的人（他打出的牌被胡，付自己一份）',
+  qianggang: '被抢杠的人（包三家）',
+  gangbao: '放杠的人（包三家）',
+};
+
+function updateDiscarderLabel() {
+  const el = document.getElementById('discarder-label');
+  if (el) el.textContent = DISCARDER_LABELS[winState.type] || '被吃胡的人';
+}
+
+function confirmWin() {
+  if (winState.winner < 0) { showToast('请选择赢家'); return; }
+  const needsDiscarder = winState.type === 'chihu' || winState.type === 'qianggang' || winState.type === 'gangbao';
+  if (needsDiscarder && winState.discarder < 0) { showToast('请选择被吃胡的人'); return; }
+  winState.mult = effectiveMult();
+  if (!(winState.mult > 0)) { showToast('请填写倍数'); return; }
+
+  const baseChanges = calcWin(winState.winner, winState.type, winState.discarder, winState.mult);
+  const winChanges = state.config.horseOn
+    ? applyHorses(baseChanges, winState.winner, winState.horses)
+    : baseChanges;
+  state.currentHand = state.currentHand || { kongs: [], win: null };
+  state.currentHand.win = {
+    winner: winState.winner,
+    winType: winState.type,
+    discarder: winState.discarder,
+    types: [...winState.types],
+    haidi: winState.haidi,
+    customMult: winState.customMult,
+    mult: winState.mult,
+    horses: state.config.horseOn ? [...winState.horses] : [],
+    dealerAt: state.dealer,
+    dealerBefore: state.dealer,
+    baseChanges,
+    changes: winChanges,
+    timestamp: Date.now(),
+  };
+  saveState();
+  closeModal('win-modal');
+  renderGame();
+  showToast('已记录胡牌，点击“结算本局”统一清算');
+}
+
+// ==================== Kong Modal ====================
+function openKongModal() {
+  kongState = { type: 'an', maker: -1, discarder: -1, horses: [] };
+  renderKongPlayerGrid();
+  renderKongDiscarderGrid();
+  renderKongHorseGrid();
+  renderKongPreview();
+  updateKongHint();
+
+  document.getElementById('kong-horse-section').style.display = state.config.horseOn ? 'block' : 'none';
+
+  document.querySelectorAll('#kong-type .toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.val === 'an');
+    btn.onclick = () => {
+      document.querySelectorAll('#kong-type .toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      kongState.type = btn.dataset.val;
+      kongState.discarder = -1;
+      document.getElementById('kong-discarder-section').style.display = kongState.type === 'ming' ? 'block' : 'none';
+      renderKongDiscarderGrid();
+      renderKongHorseGrid();
+      renderKongPreview();
+      updateKongHint();
+    };
+  });
+
+  document.getElementById('kong-discarder-section').style.display = 'none';
+  document.getElementById('kong-modal').classList.add('active');
+}
+
+function updateKongHint() {
+  const el = document.getElementById('kong-pay-hint');
+  if (!el) return;
+  const share = kongShare(kongState.type);
+  const name = kongState.type === 'an' ? '暗杠' : kongState.type === 'ming' ? '明杠' : '加杠';
+  const payer = kongState.type === 'ming' ? '点杠人付' : '三家各付';
+  el.textContent = `${name}＝底分×${kongState.type === 'an' ? 1 : kongState.type === 'ming' ? 1.5 : 0.5}（${payer}）＝${fmt(share)} 分`;
+}
+
+function renderKongPlayerGrid() {
+  const grid = document.getElementById('kong-player-grid');
+  grid.innerHTML = state.players.map((name, i) => {
+    return `<button class="player-select-btn ${kongState.maker === i ? 'selected' : ''}" data-pi="${i}" onclick="selectKongMaker(${i})">${esc(name)}</button>`;
+  }).join('');
+}
+
+function selectKongMaker(i) {
+  kongState.maker = i;
+  if (kongState.discarder === i) kongState.discarder = -1;
+  renderKongPlayerGrid();
+  renderKongDiscarderGrid();
+  renderKongHorseGrid();
+  renderKongPreview();
+}
+
+function renderKongHorseGrid() {
+  const grid = document.getElementById('kong-horse-grid');
+  document.getElementById('kong-horse-dealer-name').textContent = state.players[state.dealer];
+  const total = kongState.horses.length;
+  let html = `<button class="player-select-btn ${total === 0 ? 'selected' : ''}" onclick="clearKongHorses()" style="color:var(--text-sec);">未中马${total > 0 ? `（已买 ${total} 匹，点此清空）` : ''}</button>`;
+  html += state.players.map((name, i) => {
+    const n = kongState.horses.filter(h => h === i).length;
+    const tag = i === kongState.maker ? '（杠）'
+      : (kongState.type === 'ming' && i === kongState.discarder) ? '（点杠）'
+      : i === state.dealer ? '（庄）' : '';
+    return `<div class="horse-counter ${n > 0 ? 'selected' : ''}" data-pi="${i}">
+      <span class="horse-name">${esc(name)}${tag}</span>
+      <span class="horse-ctrl">
+        <button onclick="decKongHorse(${i})" ${n === 0 ? 'disabled' : ''} aria-label="减一匹">−</button>
+        <span class="horse-n">${n > 0 ? '🐴×' + n : '—'}</span>
+        <button onclick="incKongHorse(${i})" aria-label="加一匹">＋</button>
+      </span>
+    </div>`;
+  }).join('');
+  grid.innerHTML = html;
+}
+
+function incKongHorse(i) {
+  kongState.horses.push(i);
+  renderKongHorseGrid();
+  renderKongPreview();
+}
+
+function decKongHorse(i) {
+  const idx = kongState.horses.indexOf(i);
+  if (idx >= 0) kongState.horses.splice(idx, 1);
+  renderKongHorseGrid();
+  renderKongPreview();
+}
+
+function clearKongHorses() {
+  kongState.horses = [];
+  renderKongHorseGrid();
+  renderKongPreview();
+}
+
+function renderKongDiscarderGrid() {
+  const grid = document.getElementById('kong-discarder-grid');
+  grid.innerHTML = state.players.map((name, i) => {
+    const disabled = i === kongState.maker;
+    return `<button class="player-select-btn ${kongState.discarder === i ? 'selected' : ''}" data-pi="${i}" ${disabled ? 'disabled' : ''} onclick="selectKongDiscarder(${i})">${esc(name)}</button>`;
+  }).join('');
+}
+
+function selectKongDiscarder(i) {
+  kongState.discarder = i;
+  renderKongDiscarderGrid();
+  renderKongHorseGrid();
+  renderKongPreview();
+}
+
+function confirmKong() {
+  if (kongState.maker < 0) { showToast('请选择杠者'); return; }
+  if (kongState.type === 'ming' && kongState.discarder < 0) { showToast('请选择点杠人'); return; }
+
+  const baseChanges = calcKong(kongState.maker, kongState.type, kongState.discarder);
+  const changes = state.config.horseOn
+    ? applyKongHorses(baseChanges, kongState.maker, kongState.type, kongState.discarder, kongState.horses)
+    : baseChanges;
+  state.currentHand = state.currentHand || { kongs: [], win: null };
+  state.currentHand.kongs.push({
+    maker: kongState.maker,
+    kongType: kongState.type,
+    discarder: kongState.discarder,
+    horses: state.config.horseOn ? [...kongState.horses] : [],
+    dealerAt: state.dealer,
+    baseChanges,
+    changes,
+    timestamp: Date.now(),
+  });
+  saveState();
+  closeModal('kong-modal');
+  renderGame();
+  showToast('已添加杠，结算本局时统一清算');
+}
+
+// ==================== Settlement ====================
+function showSettlement() {
+  renderSettlement();
+  showScreen('settlement');
+}
+
+function backToGame() {
+  showScreen('game');
+}
+
+function copySettlement() {
+  const sorted = state.players.map((name, i) => ({ name, score: state.scores[i] }))
+    .sort((a, b) => b.score - a.score);
+  const transfers = calculateSettlement();
+
+  let text = '🀄 麻将结算单\n';
+  text += `共 ${state.rounds.length} 局\n\n`;
+  text += '📊 最终排名：\n';
+  sorted.forEach((p, i) => {
+    const sign = p.score > 0 ? '+' : '';
+    text += `${i + 1}. ${p.name}：${sign}${fmt(p.score)}\n`;
+  });
+
+  if (transfers.length > 0) {
+    text += '\n💸 转账明细：\n';
+    transfers.forEach(t => {
+      text += `${t.from.name} → ${t.to.name}：${fmt(t.amount)}\n`;
+    });
+  }
+  if (state.rounds.length > 0) {
+    text += '\n📋 对局明细：\n';
+    state.rounds.forEach((r, i) => {
+      const kongs = Array.isArray(r.kongs) ? r.kongs : [];
+      let line = `${i + 1}. `;
+      if (kongs.length > 0) line += kongs.map(k => kongEntryDesc(k)).join('；') + '；';
+      line += winEntryText(r);
+      const horseDesc = winHorseDesc(r);
+      if (horseDesc) line += '　' + horseDesc;
+      text += line + '\n';
+    });
+  }
+  text += `\n⏰ ${new Date().toLocaleString('zh-CN')}`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('结算单已复制到剪贴板');
+  }).catch(() => {
+    showToast('复制失败，请手动截图');
+  });
+}
+
+function confirmNewGame() {
+  if (confirm('确定要新开一局吗？当前数据将被清除。')) {
+    state.scores = [0, 0, 0, 0];
+    state.rounds = [];
+    state.currentHand = { kongs: [], win: null };
+    state.dealer = 0;
+    state.gameStarted = true;
+    saveState();
+    showScreen('game');
+    renderGame();
+    showToast('新游戏已开始');
+  }
+}
+
+// ==================== Utils ====================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`${name}-screen`).classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function fmt(n) {
+  return Number.isInteger(n) ? n : n.toFixed(2).replace(/\.?0+$/, '');
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ==================== Init ====================
+initSetup();
+</script>
+</body>
+</html>
