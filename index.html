@@ -3,10 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="format-detection" content="telephone=no, email=no, address=no">
 <meta name="theme-color" content="#1b4332">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="麻将计分器">
+<meta property="og:title" content="麻将计分器（广东玩法）">
+<meta property="og:description" content="四人广东麻将实时计分：选牌型算倍数、庄家买马、一局合并结算、统计表。">
+<meta property="og:type" content="website">
 <title>麻将计分器</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>">
 <style>
@@ -45,6 +49,7 @@ body {
   max-width: 500px;
   margin: 0 auto;
   min-height: 100vh;
+  min-height: 100dvh;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
@@ -77,7 +82,7 @@ body {
 .player-color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 .player-input-row input {
   flex: 1; padding: 12px 14px; border: 2px solid var(--border); border-radius: var(--radius-sm);
-  font-size: 15px; background: var(--card-bg); transition: border-color 0.2s;
+  font-size: 16px; background: var(--card-bg); transition: border-color 0.2s;
 }
 .player-input-row input:focus { outline: none; border-color: var(--accent); }
 
@@ -90,7 +95,7 @@ body {
 .config-row label { font-size: 14px; font-weight: 500; }
 .config-row input[type="number"] {
   width: 70px; padding: 8px; border: 2px solid var(--border); border-radius: var(--radius-sm);
-  text-align: center; font-size: 15px; font-weight: 600;
+  text-align: center; font-size: 16px; font-weight: 600;
 }
 .config-row input[type="number"]:focus { outline: none; border-color: var(--accent); }
 
@@ -1811,11 +1816,34 @@ function copySettlement() {
   }
   text += `\n⏰ ${new Date().toLocaleString('zh-CN')}`;
 
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('结算单已复制到剪贴板');
-  }).catch(() => {
-    showToast('复制失败，请手动截图');
-  });
+  copyText(text);
+}
+
+// 剪贴板：优先 Clipboard API，兜底用 execCommand（兼容微信/QQ/UC 内置浏览器等）
+function copyText(text) {
+  const done = () => showToast('结算单已复制到剪贴板');
+  const fallback = () => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '0';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (ok) { done(); return; }
+    } catch (e) {}
+    showToast('复制失败，请长按文字手动复制');
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(fallback);
+  } else {
+    fallback();
+  }
 }
 
 function confirmNewGame() {
