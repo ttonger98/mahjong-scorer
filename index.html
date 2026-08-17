@@ -64,35 +64,41 @@ body {
 @keyframes pop { 0% { transform: scale(0.9); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
 /* ===== Setup Screen ===== */
-.setup-header { text-align: center; padding: 40px 0 28px; }
-.setup-header .logo { font-size: 56px; }
-.setup-header h1 { font-size: 24px; margin-top: 8px; font-weight: 700; color: var(--table-dark); }
-.setup-header p { font-size: 14px; color: var(--text-sec); margin-top: 4px; }
+.setup-header { text-align: center; padding: 10px 0 10px; }
+.setup-header .logo {
+  font-size: 30px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--table-green), var(--accent));
+  box-shadow: 0 6px 16px rgba(45,106,79,0.35);
+}
+.setup-header h1 { font-size: 20px; margin-top: 3px; font-weight: 700; color: var(--table-dark); }
+.setup-header p { font-size: 12px; color: var(--text-sec); margin-top: 2px; }
 
 .section-title {
-  font-size: 15px; font-weight: 600; color: var(--table-dark);
-  margin: 20px 0 10px; display: flex; align-items: center; gap: 6px;
+  font-size: 14px; font-weight: 600; color: var(--table-dark);
+  margin: 14px 0 8px; display: flex; align-items: center; gap: 6px;
 }
 .section-title::before {
-  content: ''; width: 3px; height: 16px; background: var(--accent); border-radius: 2px;
+  content: ''; width: 3px; height: 14px; background: var(--accent); border-radius: 2px;
 }
 
-.player-inputs { display: grid; gap: 10px; }
+.player-inputs { display: grid; gap: 6px; }
 .player-input-row { display: flex; align-items: center; gap: 10px; }
 .player-color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 .player-input-row input {
-  flex: 1; padding: 12px 14px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+  flex: 1; padding: 9px 12px; border: 2px solid var(--border); border-radius: var(--radius-sm);
   font-size: 16px; background: var(--card-bg); transition: border-color 0.2s;
 }
 .player-input-row input:focus { outline: none; border-color: var(--accent); }
 
 .config-group {
-  background: var(--card-bg); border-radius: var(--radius); padding: 16px;
-  box-shadow: var(--shadow); margin-top: 8px;
+  background: var(--card-bg); border-radius: var(--radius); padding: 6px 14px;
+  box-shadow: var(--shadow); margin-top: 4px;
 }
-.config-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+.config-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
 .config-row:last-child { border-bottom: none; }
-.config-row label { font-size: 14px; font-weight: 500; }
+.config-row label { font-size: 13px; font-weight: 500; }
 .config-row input[type="number"] {
   width: 70px; padding: 8px; border: 2px solid var(--border); border-radius: var(--radius-sm);
   text-align: center; font-size: 16px; font-weight: 600;
@@ -107,15 +113,15 @@ body {
 .toggle-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 6px rgba(64,145,108,0.3); }
 
 .btn-primary {
-  width: 100%; padding: 16px; border: none; border-radius: var(--radius);
-  background: var(--table-green); color: #fff; font-size: 17px; font-weight: 700;
+  width: 100%; padding: 14px; border: none; border-radius: var(--radius);
+  background: var(--table-green); color: #fff; font-size: 16px; font-weight: 700;
   cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(45,106,79,0.35);
 }
 .btn-primary:active { transform: scale(0.98); }
 .btn-secondary {
-  width: 100%; padding: 14px; border: 2px solid var(--border); border-radius: var(--radius);
-  background: var(--card-bg); color: var(--text); font-size: 15px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; margin-top: 10px;
+  width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: var(--radius);
+  background: var(--card-bg); color: var(--text); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; margin-top: 8px;
 }
 .btn-secondary:active { transform: scale(0.98); }
 .btn-secondary.hidden { display: none; }
@@ -123,9 +129,12 @@ body {
 /* ===== Game Screen ===== */
 .game-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 0; margin-bottom: 12px;
+  padding: 10px 0 12px;
 }
-.game-header .round-info { font-size: 16px; font-weight: 700; color: var(--table-dark); }
+.game-header .round-info {
+  font-size: 15px; font-weight: 700; color: var(--table-dark);
+  background: var(--card-bg); padding: 9px 14px; border-radius: 20px; box-shadow: var(--shadow);
+}
 .game-header .header-actions { display: flex; gap: 8px; }
 .icon-btn {
   width: 38px; height: 38px; border: none; border-radius: 10px; background: var(--card-bg);
@@ -157,6 +166,8 @@ body {
   background: #f0f0f0; padding: 2px 8px; border-radius: 10px; color: var(--text-sec);
 }
 .score-card .player-rank.rank-1 { background: #fff3cd; color: #856404; }
+.score-card .player-rank.rank-2 { background: #eef1f4; color: #5b6672; }
+.score-card .player-rank.rank-3 { background: #fdeee2; color: #b07d4b; }
 
 /* 本局牌况面板 */
 .hand-panel {
@@ -218,12 +229,12 @@ body {
   max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); animation: slideUp 0.3s ease;
 }
-.modal-title { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 16px; color: var(--table-dark); }
+.modal-title { font-size: 17px; font-weight: 700; text-align: center; margin-bottom: 14px; color: var(--table-dark); }
 .modal-close {
   position: absolute; top: 16px; right: 20px; font-size: 22px; color: var(--text-sec);
   cursor: pointer; background: none; border: none; line-height: 1;
 }
-.modal-section { margin-bottom: 16px; }
+.modal-section { margin-bottom: 14px; }
 .modal-section-label { font-size: 13px; font-weight: 600; color: var(--text-sec); margin-bottom: 8px; }
 .player-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .player-select-btn {
@@ -290,7 +301,7 @@ body {
 }
 
 /* ===== Settlement Screen ===== */
-.settlement-title { text-align: center; font-size: 22px; font-weight: 800; color: var(--table-dark); padding: 20px 0 12px; }
+.settlement-title { text-align: center; font-size: 20px; font-weight: 800; color: var(--table-dark); padding: 14px 0 10px; }
 .standings { display: grid; gap: 8px; margin-bottom: 20px; }
 .standing-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -308,7 +319,7 @@ body {
 .standing-row .st-score { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
 
 .detail-section { margin-bottom: 20px; }
-.detail-title { font-size: 15px; font-weight: 700; color: var(--table-dark); margin-bottom: 10px; }
+.detail-title { font-size: 14px; font-weight: 700; color: var(--table-dark); margin-bottom: 8px; }
 .detail-item {
   background: var(--card-bg); border-radius: var(--radius); padding: 12px 14px;
   box-shadow: var(--shadow); margin-bottom: 8px;
@@ -322,7 +333,7 @@ body {
 .d-zero { color: var(--zero); }
 
 .transfers-section { margin-bottom: 20px; }
-.transfers-title { font-size: 15px; font-weight: 700; color: var(--table-dark); margin-bottom: 10px; }
+.transfers-title { font-size: 14px; font-weight: 700; color: var(--table-dark); margin-bottom: 8px; }
 .transfer-item {
   display: flex; align-items: center; gap: 10px; background: var(--card-bg);
   border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px;
@@ -335,7 +346,7 @@ body {
 .transfer-item .t-unit { font-size: 14px; color: var(--text-sec); font-weight: 600; }
 
 .chart-section { background: var(--card-bg); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); margin-bottom: 20px; }
-.chart-title { font-size: 15px; font-weight: 700; color: var(--table-dark); margin-bottom: 12px; }
+.chart-title { font-size: 14px; font-weight: 700; color: var(--table-dark); margin-bottom: 10px; }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 12px; }
 .chart-legend-item { display: flex; align-items: center; gap: 4px; }
 .chart-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -346,11 +357,13 @@ body {
 
 /* ===== Toast ===== */
 .toast {
-  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px; border-radius: 24px;
-  font-size: 14px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  position: fixed; bottom: calc(80px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+  background: rgba(27, 67, 50, 0.94); color: #fff; padding: 12px 22px; border-radius: 24px;
+  font-size: 14px; font-weight: 600; z-index: 200; opacity: 0;
+  transition: opacity 0.3s, transform 0.3s; pointer-events: none;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25); max-width: 88vw; text-align: center;
 }
-.toast.show { opacity: 1; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
 
 </style>
 </head>
@@ -394,13 +407,13 @@ body {
       <label>胡牌倍数上限（0＝无上限）</label>
       <input type="number" id="cfg-max-mult" value="100" min="0" step="1">
     </div>
-    <div style="font-size:12px;color:var(--text-sec);line-height:1.7;padding:10px 0 2px;">
+    <div style="font-size:12px;color:var(--text-sec);line-height:1.6;padding:6px 0 2px;">
       杠（固定，无需设置）：暗杠＝底分×1（三家各付）｜明杠＝底分×1.5（点杠人付）｜加杠＝底分×0.5（三家各付）
       <br>庄家固定买马
     </div>
   </div>
 
-  <div style="margin-top: 24px;">
+  <div style="margin-top: 10px;">
     <button class="btn-primary" onclick="startGame()">开始游戏</button>
     <button class="btn-secondary hidden" id="btn-continue" onclick="continueGame()">继续上次游戏</button>
   </div>
