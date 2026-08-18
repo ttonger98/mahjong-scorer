@@ -789,7 +789,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.11';
+const APP_VERSION = '1.9.12';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -943,7 +943,7 @@ function hasSavedGame() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed.gameStarted && parsed.rounds && parsed.rounds.length > 0;
+      return parsed.gameStarted === true;
     }
   } catch(e) {}
   return false;
@@ -2760,15 +2760,7 @@ function esc(s) {
 
 // ==================== Init ====================
 loadState();
-const versionEl = document.getElementById('app-version');
-if (versionEl) versionEl.textContent = 'v' + APP_VERSION;
-if (state.gameStarted) {
-  // 自动恢复进行中的盘（应对进程被杀/后台回收）
-  showScreen('game');
-  renderGame();
-} else {
-  initSetup();
-}
+initSetup(); // 打开默认进入首页（设置页）；进行中的盘用“继续上次游戏”恢复
 </script>
 <script>
 // PWA 注册：离线可用 + 安装到主屏幕；网络优先，线上更新自动热更
