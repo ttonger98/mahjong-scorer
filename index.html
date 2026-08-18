@@ -773,7 +773,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.8';
+const APP_VERSION = '1.9.9';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -1582,7 +1582,7 @@ function backFromConfig() {
 function renderConfigList() {
   const list = document.getElementById('config-list');
   if (!list) return;
-  let html = `<div class="session-item" onclick="openConfigEditor('new')">
+  let html = `<div class="session-item" onclick="openConfigEditor('new','默认配置')">
     <div class="session-item-main">
       <div class="session-name">📄 默认配置</div>
       <div class="session-players">${configSummary(DEFAULT_CONFIG)}</div>
@@ -1615,7 +1615,9 @@ function cloneConfig(cfg) {
   };
 }
 
-function openConfigEditor(id) {
+let editorTitle = '新建配置';
+function openConfigEditor(id, title) {
+  editorTitle = title || (id === 'new' ? '新建配置' : '编辑配置');
   if (id === 'new') {
     editingConfig = cloneConfig(DEFAULT_CONFIG);
     editingConfig.id = 'new';
@@ -1721,7 +1723,7 @@ function renderConfigEditor() {
   const body = document.getElementById('config-editor-body');
   if (!body || !editingConfig) return;
   const cfg = editingConfig;
-  document.getElementById('config-editor-title').textContent = cfg.id === 'new' ? '新建配置' : '编辑配置';
+  document.getElementById('config-editor-title').textContent = editorTitle || (cfg.id === 'new' ? '新建配置' : '编辑配置');
   body.innerHTML = `
     <div class="modal-section">
       <div class="modal-section-label">配置名称</div>
