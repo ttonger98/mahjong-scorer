@@ -1568,8 +1568,9 @@ function renderHandPanel() {
     resEl.innerHTML = '<span class="hand-empty-text">尚未记录胡牌</span>';
   }
 
-  if (wins.length === 0) {
-    sumEl.innerHTML = '<span class="hand-empty-text">记录胡牌后预览</span>';
+  const hasAny = (hand.kongs && hand.kongs.length > 0) || wins.length > 0 || (hand.horses && hand.horses.length > 0);
+  if (!hasAny) {
+    sumEl.innerHTML = '<span class="hand-empty-text">记录杠/胡牌后预览</span>';
     return;
   }
   const bd = handBreakdown(hand);
