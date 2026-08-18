@@ -349,6 +349,30 @@ body {
 
 .detail-section { margin-bottom: 20px; }
 .detail-title { font-size: 14px; font-weight: 600; color: var(--text-sec); margin-bottom: 8px; letter-spacing: 0.2px; }
+.sessions-section { margin-bottom: 16px; }
+.session-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card-bg); border-radius: 14px; padding: 12px 14px;
+  box-shadow: var(--shadow); margin-bottom: 8px; cursor: pointer; border: 1px solid rgba(0,0,0,0.03);
+}
+.session-item.active { border-color: var(--accent); background: var(--table-light); }
+.session-item-main { flex: 1; min-width: 0; }
+.session-name { font-size: 15px; font-weight: 700; color: var(--table-dark); }
+.session-date { font-size: 12px; color: var(--text-sec); margin-left: 8px; }
+.session-players { font-size: 12px; color: var(--text-sec); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-del {
+  border: none; background: none; font-size: 16px; cursor: pointer;
+  padding: 6px; opacity: 0.6; flex-shrink: 0;
+}
+.session-del:active { opacity: 1; transform: scale(0.9); }
+.session-arrow { color: var(--text-sec); font-size: 18px; flex-shrink: 0; }
+.session-filter {
+  display: flex; align-items: center; gap: 8px; margin: 4px 0 10px;
+}
+.session-filter input[type="date"] {
+  flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px;
+  font-size: 13px; background: var(--card-bg); color: var(--text);
+}
 .hand-detail-card {
   background: var(--card-bg); border-radius: 14px; padding: 12px 14px;
   box-shadow: var(--shadow); margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
@@ -431,6 +455,11 @@ body {
     <div class="logo">🀄</div>
     <h1>麻将计分器</h1>
     <p>四人麻将实时计分工具</p>
+  </div>
+
+  <div style="margin-bottom:4px;">
+    <input type="text" id="cfg-session-name" placeholder="📚 盘名（可选，默认自动用日期）" maxlength="20"
+      style="width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:12px;font-size:15px;background:var(--bg);">
   </div>
 
   <div class="section-title">玩家设置</div>
@@ -546,8 +575,19 @@ body {
 <!-- ===== Settlement Screen ===== -->
 <div id="settlement-screen" class="screen">
   <div style="position:relative;">
-    <button class="back-btn" onclick="backToGame()" title="返回游戏">←</button>
-    <div class="settlement-title">📊 统计表</div>
+    <button class="back-btn" onclick="backFromSettlement()" title="返回">←</button>
+    <div class="settlement-title" id="settlement-title">📊 统计表</div>
+  </div>
+  <div id="back-from-view" style="display:none;text-align:center;margin-bottom:10px;">
+    <button class="link-btn" onclick="backFromSettlement()">← 返回当前盘</button>
+  </div>
+  <div class="sessions-section" id="sessions-section" style="display:none;">
+    <div class="detail-title">📚 过往盘</div>
+    <div id="sessions-list"></div>
+    <div class="session-filter" id="session-filter">
+      <input type="date" id="session-date-filter" onchange="filterSessions()">
+      <button class="mini-btn" onclick="clearSessionFilter()">清除筛选</button>
+    </div>
   </div>
   <div class="standings" id="standings"></div>
   <div class="pool-section" id="pool-section" style="display:none;">
@@ -564,11 +604,15 @@ body {
   </div>
   <div class="settlement-actions">
     <button class="btn-primary" onclick="copySettlement()">📋 复制结算单</button>
-    <button class="btn-secondary" onclick="confirmNewGame()">🔄 新开一局</button>
+    <button class="btn-secondary" onclick="newSessionFromStats()">🔄 新开一盘</button>
   </div>
   <div class="update-bar">
     <button class="link-btn" onclick="updateApp()">🔄 检查更新</button>
     <span id="app-version" class="version-tag"></span>
+  </div>
+  <div class="update-bar" style="margin-top:4px;">
+    <button class="link-btn" onclick="downloadLocalFile()">📥 下载本地文件</button>
+    <button class="link-btn" onclick="clearLocalData()" style="color:#C4685F;">🧹 清除本机数据</button>
   </div>
 </div>
 
@@ -687,10 +731,14 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.7.2';
+const APP_VERSION = '1.8.0';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
+  sessions: [],                       // 历史盘（过往盘）
+  activeId: null,                     // 当前盘 id
+  sessionName: '',                    // 当前盘名
+  sessionCreatedAt: 0,
   players: ['东家', '南家', '西家', '北家'],
   scores: [0, 0, 0, 0],
   rounds: [],
@@ -773,6 +821,13 @@ HAND_TYPES.forEach(t => { HAND_TYPE_MAP[t.id] = t; });
 // Modal temp state
 let winState = { winner: -1, type: 'zimo', discarder: -1, mult: 1, customMult: false, types: [], haidi: false };
 let kongState = { type: 'an', maker: -1, discarder: -1 };
+let viewCtx = null; // 正在查看的过往盘数据（null=当前盘）
+let sessionDateFilter = ''; // 过往盘按日期筛选
+
+function activeCtx() {
+  if (viewCtx) return viewCtx;
+  return { players: state.players, scores: state.scores, rounds: state.rounds, pool: state.pool, config: state.config };
+}
 
 // ==================== Persistence ====================
 function saveState() {
@@ -1025,7 +1080,8 @@ function applyKongHorses(baseChanges, maker, type, discarder, horses) {
 }
 
 function calculateSettlement() {
-  const balances = state.players.map((name, i) => ({ name, balance: state.scores[i], pi: i }));
+  const ctx = activeCtx();
+  const balances = ctx.players.map((name, i) => ({ name, balance: ctx.scores[i], pi: i }));
   const creditors = balances.filter(b => b.balance > 0.001).sort((a, b) => b.balance - a.balance);
   const debtors = balances.filter(b => b.balance < -0.001).sort((a, b) => a.balance - b.balance);
 
@@ -1124,8 +1180,9 @@ function renderKongPreview() {
 }
 
 function renderSettlement() {
+  const ctx = activeCtx();
   const standings = document.getElementById('standings');
-  const sorted = state.players.map((name, i) => ({ name, score: state.scores[i], pi: i }))
+  const sorted = ctx.players.map((name, i) => ({ name, score: ctx.scores[i], pi: i }))
     .sort((a, b) => b.score - a.score);
   const medals = ['🥇', '🥈', '🥉', '4️⃣'];
   standings.innerHTML = sorted.map((p, idx) => {
@@ -1143,13 +1200,19 @@ function renderSettlement() {
   const poolSec = document.getElementById('pool-section');
   const poolAmt = document.getElementById('pool-amount');
   if (poolSec && poolAmt) {
-    if (state.pool > 0) {
+    if (ctx.pool > 0) {
       poolSec.style.display = 'block';
-      poolAmt.textContent = fmt(state.pool) + ' 分';
+      poolAmt.textContent = fmt(ctx.pool) + ' 分';
     } else {
       poolSec.style.display = 'none';
     }
   }
+
+  const titleEl = document.getElementById('settlement-title');
+  const backFrom = document.getElementById('back-from-view');
+  if (titleEl) titleEl.textContent = viewCtx ? `📊 ${viewCtx.name || '过往盘'}` : '📊 统计表';
+  if (backFrom) backFrom.style.display = viewCtx ? 'block' : 'none';
+  renderSessionsList();
 
   const transfers = calculateSettlement();
   const tList = document.getElementById('transfers-list');
@@ -1169,6 +1232,88 @@ function renderSettlement() {
   }
 
   renderHandDetails();
+}
+
+function renderSessionsList() {
+  const section = document.getElementById('sessions-section');
+  const list = document.getElementById('sessions-list');
+  if (!section || !list) return;
+  const list2 = state.sessions.filter(s => !sessionDateFilter || dateOf(s.createdAt) === sessionDateFilter);
+  if (state.sessions.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  list.innerHTML = (list2.length === 0
+    ? '<div style="font-size:12px;color:var(--text-sec);padding:8px 0;">该日期暂无盘</div>'
+    : list2.slice().reverse().map(s => {
+    const nameLine = esc(s.name);
+    const date = new Date(s.createdAt || Date.now());
+    const dateStr = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+    const playersLine = s.players.map((p, i) => p).join(' · ');
+    const isViewing = viewCtx && viewCtx.id === s.id;
+    return `<div class="session-item ${isViewing ? 'active' : ''}" onclick="viewSession(${s.id})">
+      <div class="session-item-main">
+        <span class="session-name">${nameLine}</span>
+        <span class="session-date">${dateStr} · ${s.rounds.length} 局</span>
+      </div>
+      <div class="session-players">${esc(playersLine)}</div>
+      <button class="session-del" onclick="event.stopPropagation();deleteSession(${s.id})" title="删除这盘">🗑</button>
+      <span class="session-arrow">›</span>
+    </div>`;
+  }).join(''));
+}
+
+function dateOf(ts) {
+  const d = new Date(ts || Date.now());
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function filterSessions() {
+  sessionDateFilter = document.getElementById('session-date-filter').value || '';
+  renderSessionsList();
+}
+
+function clearSessionFilter() {
+  sessionDateFilter = '';
+  document.getElementById('session-date-filter').value = '';
+  renderSessionsList();
+}
+
+function deleteSession(id) {
+  const s = state.sessions.find(x => x.id === id);
+  if (!s) return;
+  if (confirm(`确定删除「${s.name}」这盘吗？删除后不可恢复。`)) {
+    state.sessions = state.sessions.filter(x => x.id !== id);
+    if (viewCtx && viewCtx.id === id) viewCtx = null;
+    saveState();
+    renderSettlement();
+    showToast('已删除这盘');
+  }
+}
+
+function viewSession(id) {
+  const s = state.sessions.find(x => x.id === id);
+  if (!s) return;
+  viewCtx = {
+    id: s.id,
+    name: s.name,
+    players: s.players,
+    scores: s.scores,
+    rounds: s.rounds,
+    pool: s.pool,
+  };
+  showScreen('settlement');
+  renderSettlement();
+}
+
+function backFromSettlement() {
+  if (viewCtx) {
+    viewCtx = null;
+    renderSettlement();
+    return;
+  }
+  backToGame();
 }
 
 function winHorseDesc(w, horses) {
@@ -1204,14 +1349,15 @@ function winHorseDesc(w, horses) {
 }
 
 function renderHandDetails() {
+  const ctx = activeCtx();
   const wrap = document.getElementById('hand-details');
   if (!wrap) return;
-  if (state.rounds.length === 0) {
+  if (ctx.rounds.length === 0) {
     wrap.innerHTML = '<div style="font-size:12px;color:var(--text-sec);padding:6px 0;">暂无对局</div>';
     return;
   }
-  wrap.innerHTML = state.rounds.map((r, i) => {
-    const rows = state.players.map((name, pi) => {
+  wrap.innerHTML = ctx.rounds.map((r, i) => {
+    const rows = ctx.players.map((name, pi) => {
       const net = r.changes[pi];
       const rake = (r.rakes && r.rakes[pi]) || 0;
       const cls = net > 0 ? 'd-pos' : net < 0 ? 'd-neg' : 'd-zero';
@@ -1235,7 +1381,8 @@ function renderHandDetails() {
 }
 
 function openHandDetail(i) {
-  const r = state.rounds[i];
+  const ctx = activeCtx();
+  const r = ctx.rounds[i];
   if (!r) return;
   const wins = Array.isArray(r.wins) ? r.wins : (r.winner ? [r] : []);
   const kongs = Array.isArray(r.kongs) ? r.kongs : [];
@@ -1245,7 +1392,7 @@ function openHandDetail(i) {
   let html = `<table class="hdt-table"><thead><tr>
     <th>玩家</th><th>输赢</th><th>抽水</th><th>胡牌（倍数·牌型）</th><th>杠</th>
   </tr></thead><tbody>`;
-  state.players.forEach((name, pi) => {
+  ctx.players.forEach((name, pi) => {
     const net = r.changes[pi];
     const rake = (r.rakes && r.rakes[pi]) || 0;
     const cls = net > 0 ? 'd-pos' : net < 0 ? 'd-neg' : 'd-zero';
@@ -1329,7 +1476,12 @@ function readSetupConfig() {
 }
 
 function startGame() {
+  archiveCurrentSession(); // 开新盘前，先把进行中的盘存入历史
   readSetupConfig();
+  const name = document.getElementById('cfg-session-name').value.trim() || makeSessionName();
+  state.activeId = Date.now();
+  state.sessionName = name;
+  state.sessionCreatedAt = Date.now();
   state.scores = [0, 0, 0, 0];
   state.rounds = [];
   state.pool = 0;
@@ -1339,7 +1491,7 @@ function startGame() {
   saveState();
   showScreen('game');
   renderGame();
-  showToast('游戏开始！');
+  showToast(`开始「${state.sessionName}」`);
 }
 
 function continueGame() {
@@ -1347,6 +1499,32 @@ function continueGame() {
   showScreen('game');
   renderGame();
   showToast('已恢复上次游戏');
+}
+
+function makeSessionName() {
+  const d = new Date();
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${date} 第${state.sessions.length + 1}盘`;
+}
+
+function currentHandHasContent() {
+  const h = state.currentHand || {};
+  return (h.kongs && h.kongs.length > 0) || (h.wins && h.wins.length > 0) || (h.horses && h.horses.length > 0);
+}
+
+function archiveCurrentSession() {
+  if (!state.gameStarted) return;
+  if (state.rounds.length === 0 && !currentHandHasContent()) return;
+  state.sessions.push({
+    id: state.activeId || Date.now(),
+    name: state.sessionName || makeSessionName(),
+    players: [...state.players],
+    config: Object.assign({}, state.config),
+    scores: [...state.scores],
+    rounds: state.rounds.map(r => JSON.parse(JSON.stringify(r))),
+    pool: state.pool,
+    createdAt: state.sessionCreatedAt || Date.now(),
+  });
 }
 
 function goSetup() {
@@ -1948,19 +2126,21 @@ function backToGame() {
 }
 
 function copySettlement() {
-  const sorted = state.players.map((name, i) => ({ name, score: state.scores[i] }))
+  const ctx = activeCtx();
+  const sorted = ctx.players.map((name, i) => ({ name, score: ctx.scores[i] }))
     .sort((a, b) => b.score - a.score);
   const transfers = calculateSettlement();
 
   let text = '🀄 麻将结算单\n';
-  text += `共 ${state.rounds.length} 局\n\n`;
+  if (viewCtx) text += `📚 ${viewCtx.name}\n`;
+  text += `共 ${ctx.rounds.length} 局\n\n`;
   text += '📊 最终排名：\n';
   sorted.forEach((p, i) => {
     const sign = p.score > 0 ? '+' : '';
     text += `${i + 1}. ${p.name}：${sign}${fmt(p.score)}\n`;
   });
-  if (state.pool > 0) {
-    text += `\n🪙 共享奖池：${fmt(state.pool)} 分\n`;
+  if (ctx.pool > 0) {
+    text += `\n🪙 共享奖池：${fmt(ctx.pool)} 分\n`;
   }
 
   if (transfers.length > 0) {
@@ -1969,9 +2149,9 @@ function copySettlement() {
       text += `${t.from.name} → ${t.to.name}：${fmt(t.amount)}\n`;
     });
   }
-  if (state.rounds.length > 0) {
+  if (ctx.rounds.length > 0) {
     text += '\n📋 对局明细：\n';
-    state.rounds.forEach((r, i) => {
+    ctx.rounds.forEach((r, i) => {
       const kongs = Array.isArray(r.kongs) ? r.kongs : [];
       const handHorses = Array.isArray(r.horses) ? r.horses : [];
       const wins = Array.isArray(r.wins) ? r.wins : (r.winner ? [r] : []);
@@ -2045,18 +2225,56 @@ async function updateApp() {
   location.reload();
 }
 
-function confirmNewGame() {
-  if (confirm('确定要新开一局吗？当前数据将被清除。')) {
-    state.scores = [0, 0, 0, 0];
-    state.rounds = [];
-    state.pool = 0;
-    state.currentHand = { kongs: [], wins: [], horses: [] };
-    state.dealer = 0;
-    state.gameStarted = true;
+// 清除本机所有数据（当前盘、过往盘、缓存），不可恢复
+async function clearLocalData() {
+  if (confirm('确定清除本机所有数据（当前盘、过往盘、缓存）？此操作不可恢复。')) {
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {}
+    location.reload();
+  }
+}
+
+// 生成一份本地 HTML 文件，供离线直接使用
+async function downloadLocalFile() {
+  showToast('正在生成本地文件…');
+  try {
+    let text;
+    try {
+      const res = await fetch('./', { cache: 'no-store' });
+      text = await res.text();
+    } catch (e) {
+      // file:// 等场景：直接用当前页面源码
+      text = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    }
+    const blob = new Blob([text], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '麻将计分器.html';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 100);
+    showToast('已生成本地文件');
+  } catch (e) {
+    showToast('生成失败，可用浏览器“另存为”保存页面');
+  }
+}
+
+function newSessionFromStats() {
+  if (confirm('结束当前这盘并去开新的一盘？当前盘会存入“过往盘”。')) {
+    archiveCurrentSession();
+    state.gameStarted = false;
     saveState();
-    showScreen('game');
-    renderGame();
-    showToast('新游戏已开始');
+    showScreen('setup');
+    initSetup();
+    showToast('已存盘，请设置新的一盘');
   }
 }
 
@@ -2087,9 +2305,16 @@ function esc(s) {
 }
 
 // ==================== Init ====================
-initSetup();
+loadState();
 const versionEl = document.getElementById('app-version');
 if (versionEl) versionEl.textContent = 'v' + APP_VERSION;
+if (state.gameStarted) {
+  // 自动恢复进行中的盘（应对进程被杀/后台回收）
+  showScreen('game');
+  renderGame();
+} else {
+  initSetup();
+}
 </script>
 <script>
 // PWA 注册：离线可用 + 安装到主屏幕；网络优先，线上更新自动热更
