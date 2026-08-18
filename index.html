@@ -18,27 +18,27 @@
 <style>
 /* ===== iOS 风格设计系统 ===== */
 :root {
-  --bg: #F2F2F7;              /* iOS 分组背景 */
+  --bg: #EDF2EE;              /* 暖调浅绿背景（不灰） */
   --card-bg: #FFFFFF;         /* 卡片 */
-  --table-green: #2F6B52;     /* 主色（柔和麻将绿） */
+  --table-green: #2E7056;     /* 主色（麻将绿） */
   --table-dark: #24292F;      /* 主标题 */
-  --table-light: #E3ECE6;     /* 主色浅底 */
+  --table-light: #E4EEE7;     /* 主色浅底 */
   --text: #24292F;            /* 一级文字 */
-  --text-sec: #8E8E93;        /* 二级文字（提示弱化） */
-  --positive: #C25E5C;        /* 赢（柔和红） */
-  --negative: #5F8F73;        /* 输（柔和绿） */
-  --zero: #ADADB3;            /* 零/弱 */
-  --accent: #2F6B52;
-  --accent-light: #C9DED2;
-  --border: #E5E5EA;          /* iOS 分隔线 */
+  --text-sec: #79827C;        /* 二级文字（提示弱化，带暖灰） */
+  --positive: #C4685F;        /* 赢（红） */
+  --negative: #54886B;        /* 输（绿） */
+  --zero: #A9B2AC;            /* 零/弱 */
+  --accent: #2E7056;
+  --accent-light: #D3E5DA;
+  --border: #DFE5E0;          /* 分隔线（暖调） */
   --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.05);
   --shadow-lg: 0 8px 30px rgba(0,0,0,0.14);
   --radius: 14px;
   --radius-sm: 10px;
-  --p1: #C25E5C;              /* 玩家1 柔和红 */
-  --p2: #6E8FA8;              /* 玩家2 柔和蓝 */
-  --p3: #6A9B7D;              /* 玩家3 柔和绿 */
-  --p4: #C68E63;              /* 玩家4 柔和橙 */
+  --p1: #C4685F;              /* 玩家1 红 */
+  --p2: #5F87A6;              /* 玩家2 蓝 */
+  --p3: #5E9C77;              /* 玩家3 绿 */
+  --p4: #C08B57;              /* 玩家4 橙 */
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
@@ -73,8 +73,8 @@ body {
   font-size: 30px; line-height: 1;
   display: inline-flex; align-items: center; justify-content: center;
   width: 56px; height: 56px; border-radius: 18px;
-  background: linear-gradient(135deg, #2F6B52, #4A8468);
-  box-shadow: 0 8px 20px rgba(47,107,82,0.28);
+  background: linear-gradient(135deg, #2E7056, #4E8A6C);
+  box-shadow: 0 8px 20px rgba(46,112,86,0.26);
 }
 .setup-header h1 { font-size: 28px; margin-top: 8px; font-weight: 800; color: var(--table-dark); letter-spacing: 0.5px; }
 .setup-header p { font-size: 13px; color: var(--text-sec); margin-top: 3px; }
@@ -133,7 +133,7 @@ body {
 .btn-primary {
   width: 100%; padding: 13px; border: none; border-radius: 13px;
   background: var(--table-green); color: #fff; font-size: 17px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; box-shadow: 0 6px 16px rgba(47,107,82,0.22);
+  cursor: pointer; transition: all 0.2s; box-shadow: 0 6px 16px rgba(46,112,86,0.2);
 }
 .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
 .btn-secondary {
@@ -220,7 +220,7 @@ body {
 .hs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .hs-table th { text-align: right; padding: 4px 3px; font-size: 11px; color: var(--text-sec); font-weight: 600; border-bottom: 0.5px solid var(--border); }
 .hs-table th:first-child, .hs-table td:first-child { text-align: left; }
-.hs-table td { padding: 7px 3px; text-align: right; border-bottom: 0.5px solid #EFEFF2; font-variant-numeric: tabular-nums; }
+.hs-table td { padding: 7px 3px; text-align: right; border-bottom: 0.5px solid #E9EEE9; font-variant-numeric: tabular-nums; }
 .hs-table tr:last-child td { border-bottom: none; }
 .hs-total { font-weight: 800; font-size: 13px; }
 .hs-real { display: block; font-size: 10px; color: var(--text-sec); font-weight: 600; }
@@ -357,7 +357,7 @@ body {
 .hdr-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .hdr-round { font-size: 14px; font-weight: 800; color: var(--table-dark); }
 .hdr-pool { font-size: 12px; color: #A97B14; font-weight: 700; }
-.hdr-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 0.5px solid #EFEFF2; }
+.hdr-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 0.5px solid #E9EEE9; }
 .hdr-row:last-child { border-bottom: none; }
 .hdr-avatar {
   display: inline-flex; align-items: center; justify-content: center;
@@ -370,7 +370,7 @@ body {
 .hdr-hint { text-align: center; font-size: 11px; color: var(--accent); margin-top: 5px; }
 .hdt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .hdt-table th { text-align: left; padding: 6px 4px; background: var(--bg); color: var(--text-sec); font-size: 11px; font-weight: 600; border-bottom: 0.5px solid var(--border); }
-.hdt-table td { padding: 8px 4px; border-bottom: 0.5px solid #F2F2F5; vertical-align: top; line-height: 1.45; }
+.hdt-table td { padding: 8px 4px; border-bottom: 0.5px solid #E9EEE9; vertical-align: top; line-height: 1.45; }
 .hdt-table tr:last-child td { border-bottom: none; }
 .hdt-name { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-weight: 600; }
 .hdt-horse { margin-top: 10px; font-size: 12px; color: var(--text-sec); }
@@ -687,7 +687,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.7.1';
+const APP_VERSION = '1.7.2';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
