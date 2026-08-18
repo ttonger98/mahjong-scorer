@@ -370,6 +370,9 @@ body {
 
 .detail-section { margin-bottom: 18px; }
 .detail-title { font-size: 13px; font-weight: 600; color: var(--ink2); margin-bottom: 9px; }
+.detail-title-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.detail-title-lg { font-size: 17px; font-weight: 800; color: var(--ink); }
+.detail-count { font-size: 13px; color: var(--ink2); font-weight: 600; }
 .hand-detail-card {
   background: var(--card); border-radius: 14px; padding: 12px 14px;
   box-shadow: var(--shadow); margin-bottom: 8px; cursor: pointer; transition: all .2s;
@@ -607,12 +610,11 @@ body {
       <div class="pool-amount" id="pool-amount">0</div>
     </div>
     <div class="detail-section">
-      <div class="detail-title">📋 对局明细</div>
+      <div class="detail-title-row">
+        <span class="detail-title-lg">📋 对局明细</span>
+        <span class="detail-count" id="hand-detail-count"></span>
+      </div>
       <div id="hand-details"></div>
-    </div>
-    <div class="transfers-section" id="transfers-section">
-      <div class="transfers-title">💸 转账明细</div>
-      <div id="transfers-list"></div>
     </div>
   </div>
   <div class="settlement-actions">
@@ -767,7 +769,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.6';
+const APP_VERSION = '1.9.7';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -1294,23 +1296,6 @@ function renderDetailView() {
     }
   }
 
-  const transfers = calculateSettlement();
-  const tList = document.getElementById('transfers-list');
-  const tSection = document.getElementById('transfers-section');
-  if (transfers.length === 0) {
-    tSection.style.display = 'none';
-  } else {
-    tSection.style.display = 'block';
-    tList.innerHTML = transfers.map(t => {
-      return `<div class="transfer-item">
-        <span class="t-from">${esc(t.from.name)}</span>
-        <span class="t-arrow">→</span>
-        <span class="t-to">${esc(t.to.name)}</span>
-        <span class="t-amount">${fmt(t.amount)}<span class="t-unit"> 分</span></span>
-      </div>`;
-    }).join('');
-  }
-
   renderHandDetails();
 }
 
@@ -1476,6 +1461,8 @@ function winHorseDesc(w, horses) {
 function renderHandDetails() {
   const ctx = activeCtx();
   const wrap = document.getElementById('hand-details');
+  const countEl = document.getElementById('hand-detail-count');
+  if (countEl) countEl.textContent = `已进行 ${ctx.rounds.length} 局`;
   if (!wrap) return;
   if (ctx.rounds.length === 0) {
     wrap.innerHTML = '<div style="font-size:12px;color:var(--text-sec);padding:6px 0;">暂无对局</div>';
