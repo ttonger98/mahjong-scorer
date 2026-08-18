@@ -335,14 +335,31 @@ body {
 
 .detail-section { margin-bottom: 20px; }
 .detail-title { font-size: 14px; font-weight: 700; color: var(--table-dark); margin-bottom: 8px; }
-.detail-item {
+.hand-detail-card {
   background: var(--card-bg); border-radius: var(--radius); padding: 12px 14px;
-  box-shadow: var(--shadow); margin-bottom: 8px;
+  box-shadow: var(--shadow); margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
 }
-.detail-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
-.detail-round { font-size: 12px; font-weight: 800; color: var(--text-sec); flex-shrink: 0; }
-.detail-desc { font-size: 12px; color: var(--text); line-height: 1.5; }
-.detail-changes { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hand-detail-card:active { transform: scale(0.98); }
+.hdr-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.hdr-round { font-size: 13px; font-weight: 800; color: var(--table-dark); }
+.hdr-pool { font-size: 12px; color: #a97b14; font-weight: 700; }
+.hdr-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f5f5f5; }
+.hdr-row:last-child { border-bottom: none; }
+.hdr-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%; color: #fff;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.hdr-name { flex: 1; font-size: 13px; font-weight: 600; }
+.hdr-net { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hdr-rake { font-size: 11px; color: var(--text-sec); min-width: 52px; text-align: right; }
+.hdr-hint { text-align: center; font-size: 11px; color: var(--accent); margin-top: 5px; }
+.hdt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.hdt-table th { text-align: left; padding: 6px 4px; background: var(--bg); color: var(--text-sec); font-size: 11px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.hdt-table td { padding: 7px 4px; border-bottom: 1px solid #f2f2f2; vertical-align: top; line-height: 1.45; }
+.hdt-table tr:last-child td { border-bottom: none; }
+.hdt-name { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-weight: 600; }
+.hdt-horse { margin-top: 10px; font-size: 12px; color: var(--text-sec); }
 .d-pos { color: var(--positive); }
 .d-neg { color: var(--negative); }
 .d-zero { color: var(--zero); }
@@ -540,6 +557,18 @@ body {
   <div class="update-bar">
     <button class="link-btn" onclick="updateApp()">🔄 检查更新</button>
     <span id="app-version" class="version-tag"></span>
+  </div>
+</div>
+
+<!-- ===== 对局详情 Modal ===== -->
+<div class="modal-overlay" id="hand-detail-modal">
+  <div class="modal" style="position:relative;">
+    <button class="modal-close" onclick="closeModal('hand-detail-modal')">✕</button>
+    <div class="modal-title" id="hand-detail-title">对局详情</div>
+    <div id="hand-detail-body"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="closeModal('hand-detail-modal')">关闭</button>
+    </div>
   </div>
 </div>
 
@@ -1171,35 +1200,91 @@ function renderHandDetails() {
     return;
   }
   wrap.innerHTML = state.rounds.map((r, i) => {
-    const kongs = Array.isArray(r.kongs) ? r.kongs : [];
-    const handHorses = Array.isArray(r.horses) ? r.horses : [];
-    const wins = Array.isArray(r.wins) ? r.wins : (r.winner ? [r] : []);
-    let desc = kongs.map(k => {
-      let d = kongEntryDesc(k);
-      if (handHorses.length > 0) {
-        const notes = kongHorseNotesText(k.maker, k.kongType, k.discarder, handHorses, k.dealerAt);
-        if (notes.length > 0) d += '　' + notes.join('；');
-      }
-      return d;
-    }).join('；');
-    if (desc) desc += '；';
-    desc += wins.map(w => {
-      let d = winEntryText(w);
-      const hd = winHorseDesc(w, handHorses);
-      if (hd) d += '　' + hd;
-      return d;
-    }).join('；');
-    const changesStr = r.changes.map((c, pi) => {
-      const sign = c > 0 ? '+' : '';
-      const cls = c > 0 ? 'd-pos' : c < 0 ? 'd-neg' : 'd-zero';
-      const raked = (r.rakes && r.rakes[pi] > 0) ? `（抽${fmt(r.rakes[pi])}）` : '';
-      return `<span class="${cls}">${esc(state.players[pi])} ${sign}${fmt(c)}${raked}</span>`;
-    }).join('　');
-    return `<div class="detail-item">
-      <div class="detail-head"><span class="detail-round">第 ${i + 1} 局</span><span class="detail-desc">${desc}</span></div>
-      <div class="detail-changes">${changesStr}</div>
+    const rows = state.players.map((name, pi) => {
+      const net = r.changes[pi];
+      const rake = (r.rakes && r.rakes[pi]) || 0;
+      const cls = net > 0 ? 'd-pos' : net < 0 ? 'd-neg' : 'd-zero';
+      const sign = net > 0 ? '+' : '';
+      return `<div class="hdr-row">
+        <span class="hdr-avatar" style="background:var(--p${pi + 1})">${esc(name.charAt(0))}</span>
+        <span class="hdr-name">${esc(name)}</span>
+        <span class="hdr-net ${cls}">${sign}${fmt(net)}</span>
+        <span class="hdr-rake">${rake > 0 ? '抽' + fmt(rake) : ''}</span>
+      </div>`;
+    }).join('');
+    return `<div class="hand-detail-card" onclick="openHandDetail(${i})">
+      <div class="hdr-head">
+        <span class="hdr-round">第 ${i + 1} 局</span>
+        <span class="hdr-pool">🪙 抽水 ${fmt(r.poolAdd || 0)}</span>
+      </div>
+      ${rows}
+      <div class="hdr-hint">点此查看详情 ›</div>
     </div>`;
   }).join('');
+}
+
+function openHandDetail(i) {
+  const r = state.rounds[i];
+  if (!r) return;
+  const wins = Array.isArray(r.wins) ? r.wins : (r.winner ? [r] : []);
+  const kongs = Array.isArray(r.kongs) ? r.kongs : [];
+  const handHorses = Array.isArray(r.horses) ? r.horses : [];
+  document.getElementById('hand-detail-title').textContent = `第 ${i + 1} 局 详情`;
+
+  let html = `<table class="hdt-table"><thead><tr>
+    <th>玩家</th><th>输赢</th><th>抽水</th><th>胡牌（倍数·牌型）</th><th>杠</th>
+  </tr></thead><tbody>`;
+  state.players.forEach((name, pi) => {
+    const net = r.changes[pi];
+    const rake = (r.rakes && r.rakes[pi]) || 0;
+    const cls = net > 0 ? 'd-pos' : net < 0 ? 'd-neg' : 'd-zero';
+    const sign = net > 0 ? '+' : '';
+    const winTexts = wins.filter(w => w.winner === pi).map(w => winTypeText(w));
+    const kongTexts = kongs.filter(k => k.maker === pi).map(k => kongTypeText(k));
+    html += `<tr>
+      <td><span class="hdt-name"><span class="hdr-avatar" style="background:var(--p${pi + 1})">${esc(name.charAt(0))}</span>${esc(name)}</span></td>
+      <td class="${cls}">${sign}${fmt(net)}</td>
+      <td>${rake > 0 ? fmt(rake) : '-'}</td>
+      <td>${winTexts.length ? winTexts.join('<br>') : '-'}</td>
+      <td>${kongTexts.length ? kongTexts.join('<br>') : '-'}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+
+  const horseHits = horseHitsText(handHorses);
+  if (horseHits) {
+    html += `<div class="hdt-horse">🐴 马：${horseHits}${r.poolAdd > 0 ? '；🪙 抽水 ' + fmt(r.poolAdd) + ' 分进奖池' : ''}</div>`;
+  } else if (r.poolAdd > 0) {
+    html += `<div class="hdt-horse">🪙 抽水 ${fmt(r.poolAdd)} 分进奖池</div>`;
+  }
+
+  document.getElementById('hand-detail-body').innerHTML = html;
+  document.getElementById('hand-detail-modal').classList.add('active');
+}
+
+function winTypeText(w) {
+  const typeName = w.winType === 'zimo' ? '自摸' : w.winType === 'chihu' ? '吃胡' : w.winType === 'qianggang' ? '抢杠' : '杠爆';
+  const loserTag = w.winType === 'chihu' ? `（${esc(state.players[w.discarder])}被吃胡）`
+    : w.winType === 'qianggang' ? `（${esc(state.players[w.discarder])}被抢杠）`
+    : w.winType === 'gangbao' ? `（${esc(state.players[w.discarder])}放杠）`
+    : '';
+  const typeTags = (w.types || []).map(id => (HAND_TYPE_MAP[id] || {}).name || '').filter(Boolean);
+  let d = `${typeName} ×${fmt(w.mult)}倍${loserTag}`;
+  if (w.haidi) d += '（海底）';
+  if (typeTags.length) d += `【${typeTags.join('、')}】`;
+  return d;
+}
+
+function kongTypeText(k) {
+  const name = k.kongType === 'an' ? '暗杠' : k.kongType === 'ming' ? '明杠' : '加杠';
+  return k.kongType === 'ming' ? `${name}（${esc(state.players[k.discarder])}付）` : `${name}（三家各付）`;
+}
+
+function horseHitsText(horses) {
+  if (!Array.isArray(horses) || horses.length === 0) return '';
+  const counts = {};
+  horses.forEach(h => counts[h] = (counts[h] || 0) + 1);
+  return Object.keys(counts).map(hk => `中${esc(state.players[+hk])}×${counts[hk]}`).join('、');
 }
 
 function renderChart() {
