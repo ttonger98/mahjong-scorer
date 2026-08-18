@@ -789,7 +789,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.12';
+const APP_VERSION = '1.9.13';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -943,7 +943,10 @@ function hasSavedGame() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed.gameStarted === true;
+      if (parsed.gameStarted !== true) return false;
+      const h = parsed.currentHand || {};
+      const hasHand = (h.kongs && h.kongs.length > 0) || (h.wins && h.wins.length > 0) || (h.horses && h.horses.length > 0);
+      return (parsed.rounds && parsed.rounds.length > 0) || hasHand;
     }
   } catch(e) {}
   return false;
