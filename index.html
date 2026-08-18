@@ -459,6 +459,8 @@ body {
   <div style="position:relative;height:0;">
     <button onclick="showConfigScreen()" title="配置管理"
       style="position:absolute;top:0;right:0;z-index:5;display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);font-size:13px;font-weight:600;padding:8px 14px;cursor:pointer;box-shadow:var(--shadow);">🛠️ 详细配置</button>
+    <button onclick="showDebugScreen()" title="调试"
+      style="position:absolute;top:46px;right:0;z-index:5;display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink2);font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;box-shadow:var(--shadow);">🧪 调试</button>
   </div>
   <div class="setup-header">
     <div class="logo">🀄</div>
@@ -630,14 +632,6 @@ body {
     <button class="btn-primary" onclick="copySettlement()">📋 复制结算单</button>
     <button class="btn-secondary" onclick="newSessionFromStats()">🔄 新开一盘</button>
   </div>
-  <div class="update-bar">
-    <button class="link-btn" onclick="updateApp()">🔄 检查更新</button>
-    <span id="app-version" class="version-tag"></span>
-  </div>
-  <div class="update-bar" style="margin-top:4px;">
-    <button class="link-btn" onclick="downloadLocalFile()">📥 下载本地文件</button>
-    <button class="link-btn" onclick="clearLocalData()" style="color:#C4685F;">🧹 清除本机数据</button>
-  </div>
 </div>
 
 <!-- ===== 配置管理 ===== -->
@@ -648,6 +642,23 @@ body {
   </div>
   <div id="config-list"></div>
   <button class="btn-secondary" onclick="openConfigEditor('new')">＋ 新建配置</button>
+</div>
+
+<!-- ===== 调试 ===== -->
+<div id="debug-screen" class="screen">
+  <div style="position:relative;">
+    <button class="back-btn" onclick="backFromDebug()" title="返回">←</button>
+    <div class="settlement-title">🧪 调试</div>
+  </div>
+  <div class="config-group" style="margin-bottom:16px;">
+    <div class="config-row">
+      <label>当前版本</label>
+      <span id="debug-version" style="font-size:15px;font-weight:700;color:var(--ink);"></span>
+    </div>
+  </div>
+  <button class="btn-secondary" onclick="updateApp()">🔄 检查更新</button>
+  <button class="btn-secondary" onclick="downloadLocalFile()">📥 下载本地文件</button>
+  <button class="btn-secondary" onclick="clearLocalData()" style="color:#C4685F;">🧹 清除本机数据</button>
 </div>
 
 <!-- ===== 对局详情 Modal ===== -->
@@ -778,7 +789,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.10';
+const APP_VERSION = '1.9.11';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -1580,6 +1591,17 @@ function showConfigScreen() {
 }
 
 function backFromConfig() {
+  showScreen('setup');
+  initSetup();
+}
+
+function showDebugScreen() {
+  const ver = document.getElementById('debug-version');
+  if (ver) ver.textContent = 'v' + APP_VERSION;
+  showScreen('debug');
+}
+
+function backFromDebug() {
   showScreen('setup');
   initSetup();
 }
