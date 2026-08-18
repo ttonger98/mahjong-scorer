@@ -425,7 +425,8 @@ body {
 <!-- ===== Setup Screen ===== -->
 <div id="setup-screen" class="screen active">
   <div style="position:relative;height:0;">
-    <button class="icon-btn" onclick="showConfigScreen()" title="配置管理" style="position:absolute;top:0;right:0;z-index:5;">🛠️</button>
+    <button onclick="showConfigScreen()" title="配置管理"
+      style="position:absolute;top:0;right:0;z-index:5;display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);font-size:13px;font-weight:600;padding:8px 14px;cursor:pointer;box-shadow:var(--shadow);">🛠️ 详细配置</button>
   </div>
   <div class="setup-header">
     <div class="logo">🀄</div>
@@ -734,7 +735,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.2';
+const APP_VERSION = '1.9.3';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
