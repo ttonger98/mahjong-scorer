@@ -269,7 +269,7 @@ body {
 .ht-chip:active { transform: scale(0.97); }
 
 /* 马匹计数选择行：同一人可中多匹 */
-#horse-grid, #kong-horse-grid { display: flex; flex-direction: column; gap: 8px; }
+#hand-horse-grid { display: flex; flex-direction: column; gap: 8px; }
 .horse-counter {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 12px; border: 2px solid var(--border); border-radius: var(--radius-sm);
@@ -448,6 +448,14 @@ body {
 
     <div class="hand-section">
       <div class="hand-section-head">
+        <span class="hand-section-label">🐴 中马情况（庄家买马，同一人可中多匹）</span>
+        <button class="mini-btn" onclick="clearHandHorses()">清空</button>
+      </div>
+      <div id="hand-horse-grid"></div>
+    </div>
+
+    <div class="hand-section">
+      <div class="hand-section-head">
         <span class="hand-section-label">杠（可加多条）</span>
         <button class="mini-btn" onclick="openKongModal()">＋ 添加杠</button>
       </div>
@@ -463,7 +471,7 @@ body {
     </div>
 
     <div class="hand-summary">
-      <div class="hand-summary-title">本局合计（杠＋胡牌）</div>
+      <div class="hand-summary-title">本局合计（马＋杠＋胡牌）</div>
       <div id="hand-summary-content"><span class="hand-empty-text">记录胡牌后预览</span></div>
     </div>
 
@@ -552,11 +560,6 @@ body {
       </div>
     </div>
 
-    <div class="modal-section" id="horse-section">
-      <div class="modal-section-label">🐴 庄家买马（庄家：<span id="horse-dealer-name"></span>，＋加一匹／−减一匹，同一人可中多匹）中胡牌者＝各输家再赔一份给庄家；中输家＝庄家再输一份给胡牌者（输家不额外付）；中庄家自己＝庄家胡牌各家再赔一份／别人胡牌庄家再输一份</div>
-      <div class="player-select-grid" id="horse-grid"></div>
-    </div>
-
     <div class="preview-box" id="win-preview">
       <div class="preview-title">分数变化预览</div>
       <div id="win-preview-content"></div>
@@ -595,11 +598,6 @@ body {
       <div class="player-select-grid" id="kong-discarder-grid"></div>
     </div>
 
-    <div class="modal-section" id="kong-horse-section">
-      <div class="modal-section-label">🐴 马中谁（庄家：<span id="kong-horse-dealer-name"></span>，＋加一匹／−减一匹，同一人可中多匹）中杠者＝庄家赢一份，中付家＝庄家输一份（付家不额外付）</div>
-      <div class="player-select-grid" id="kong-horse-grid"></div>
-    </div>
-
     <div class="preview-box">
       <div class="preview-title">分数变化预览</div>
       <div id="kong-preview-content"></div>
@@ -623,7 +621,7 @@ const state = {
   players: ['东家', '南家', '西家', '北家'],
   scores: [0, 0, 0, 0],
   rounds: [],
-  currentHand: { kongs: [], win: null },
+  currentHand: { kongs: [], win: null, horses: [] },
   dealer: 0,
   config: {
     baseScore: 1,
@@ -695,8 +693,8 @@ const HAND_TYPE_MAP = {};
 HAND_TYPES.forEach(t => { HAND_TYPE_MAP[t.id] = t; });
 
 // Modal temp state
-let winState = { winner: -1, type: 'zimo', discarder: -1, mult: 1, customMult: false, types: [], haidi: false, horses: [] };
-let kongState = { type: 'an', maker: -1, discarder: -1, horses: [] };
+let winState = { winner: -1, type: 'zimo', discarder: -1, mult: 1, customMult: false, types: [], haidi: false };
+let kongState = { type: 'an', maker: -1, discarder: -1 };
 
 // ==================== Persistence ====================
 function saveState() {
@@ -904,22 +902,22 @@ function applyKongHorse(changes, maker, type, discarder, horse) {
   return res;
 }
 
-function kongHorseNotesText(maker, type, discarder, horses) {
+function kongHorseNotesText(maker, type, discarder, horses, dealerAt) {
   if (!Array.isArray(horses) || horses.length === 0) return [];
   const counts = {};
   horses.forEach(h => counts[h] = (counts[h] || 0) + 1);
   return Object.keys(counts).map(hk => {
     const n = counts[hk];
-    const t = kongHorseNoteText(maker, type, discarder, +hk, n);
+    const t = kongHorseNoteText(maker, type, discarder, +hk, n, dealerAt);
     if (!t) return '';
     return n > 1 ? t.replace('🐴 马中', `🐴 ${n}匹马中`) : t;
   }).filter(t => t);
 }
 
-function kongHorseNoteText(maker, type, discarder, horse, n) {
+function kongHorseNoteText(maker, type, discarder, horse, n, dealerAt) {
   n = n || 1;
   if (horse < 0) return '';
-  const D = state.dealer;
+  const D = typeof dealerAt === 'number' ? dealerAt : state.dealer;
   const share = kongShare(type);
   const payers = type === 'ming' ? [discarder] : [0, 1, 2, 3].filter(i => i !== maker);
   // 每个付家在杠本身的基础付款
@@ -1007,18 +1005,12 @@ function renderWinPreview() {
     return;
   }
   const baseChanges = calcWin(winState.winner, winState.type, winState.discarder, winState.mult);
-  const winChanges = state.config.horseOn
-    ? applyHorses(baseChanges, winState.winner, winState.horses)
-    : baseChanges;
-  const changes = winChanges; // 仅胡牌本身，杠在下方本局合计中一并结算
-  const horseNotes = state.config.horseOn ? horseNotesText(winState.winner, winState.horses, baseChanges) : [];
+  const changes = baseChanges; // 仅胡牌本身，马/杠在下方“本局合计”中一并结算
   const handKongs = (state.currentHand || {}).kongs || [];
   const kongNote = handKongs.length > 0
-    ? `<div style="font-size:12px;color:var(--text-sec);margin-top:4px;">以上仅为胡牌分数；本局另有 ${handKongs.length} 条杠，将在下方“本局合计”中一并结算</div>`
+    ? `<div style="font-size:12px;color:var(--text-sec);margin-top:4px;">以上仅为胡牌分数；本局另有 ${handKongs.length} 条杠与马的分，将在下方“本局合计”中一并结算</div>`
     : '';
-  const noteHtml = (horseNotes.length > 0 || kongNote)
-    ? `<div style="font-size:12px;color:var(--accent);margin-top:6px;font-weight:600;white-space:pre-line;">${esc(horseNotes.join('\n'))}</div>${kongNote}`
-    : '';
+  const noteHtml = kongNote;
   el.innerHTML = changes.map((c, i) => {
     const sign = c > 0 ? '+' : '';
     const cls = c > 0 ? 'score-pos' : c < 0 ? 'score-neg' : 'score-zero';
@@ -1040,15 +1032,8 @@ function renderKongPreview() {
     return;
   }
   const baseChanges = calcKong(kongState.maker, kongState.type, kongState.discarder);
-  const changes = state.config.horseOn
-    ? applyKongHorses(baseChanges, kongState.maker, kongState.type, kongState.discarder, kongState.horses)
-    : baseChanges;
-  const horseNotes = state.config.horseOn
-    ? kongHorseNotesText(kongState.maker, kongState.type, kongState.discarder, kongState.horses)
-    : [];
-  const noteHtml = horseNotes.length > 0
-    ? `<div style="font-size:12px;color:var(--accent);margin-top:6px;font-weight:600;white-space:pre-line;">${esc(horseNotes.join('\n'))}</div>`
-    : '';
+  const changes = baseChanges; // 仅杠本身，马在下方“本局合计”中一并结算
+  const noteHtml = '';
   el.innerHTML = changes.map((c, i) => {
     const sign = c > 0 ? '+' : '';
     const cls = c > 0 ? 'score-pos' : c < 0 ? 'score-neg' : 'score-zero';
@@ -1137,7 +1122,15 @@ function renderHandDetails() {
   }
   wrap.innerHTML = state.rounds.map((r, i) => {
     const kongs = Array.isArray(r.kongs) ? r.kongs : [];
-    let desc = kongs.map(k => kongEntryDesc(k)).join('；');
+    const handHorses = Array.isArray(r.horses) ? r.horses : [];
+    let desc = kongs.map(k => {
+      let d = kongEntryDesc(k);
+      if (handHorses.length > 0) {
+        const notes = kongHorseNotesText(k.maker, k.kongType, k.discarder, handHorses, k.dealerAt);
+        if (notes.length > 0) d += '　' + notes.join('；');
+      }
+      return d;
+    }).join('；');
     if (desc) desc += '；';
     desc += winEntryText(r);
     const horseDesc = winHorseDesc(r);
@@ -1248,7 +1241,7 @@ function startGame() {
   readSetupConfig();
   state.scores = [0, 0, 0, 0];
   state.rounds = [];
-  state.currentHand = { kongs: [], win: null };
+  state.currentHand = { kongs: [], win: null, horses: [] };
   state.dealer = 0;
   state.gameStarted = true;
   saveState();
@@ -1288,13 +1281,11 @@ function setDealer(i) {
 function settleHand() {
   const hand = state.currentHand || { kongs: [], win: null };
   if (!hand.win) { showToast('请先记录胡牌'); return; }
-  const kongChanges = sumChanges(hand.kongs);
-  const winChanges = hand.win.changes || [0, 0, 0, 0];
-  const changes = winChanges.map((v, i) => +(v + kongChanges[i]).toFixed(2));
+  const changes = handChanges(hand);
   state.scores = state.scores.map((s, i) => +(s + changes[i]).toFixed(2));
-  state.rounds.push({ type: 'win', ...hand.win, kongs: [...(hand.kongs || [])], changes });
+  state.rounds.push({ type: 'win', ...hand.win, kongs: [...(hand.kongs || [])], horses: [...(hand.horses || [])], changes });
   state.dealer = hand.win.winner; // 谁胡谁坐庄
-  state.currentHand = { kongs: [], win: null };
+  state.currentHand = { kongs: [], win: null, horses: [] };
   saveState();
   renderGame();
   showToast(`第 ${state.rounds.length} 局已结算`);
@@ -1313,7 +1304,7 @@ function undoLastHand() {
 }
 
 function clearHand() {
-  state.currentHand = { kongs: [], win: null };
+  state.currentHand = { kongs: [], win: null, horses: [] };
   saveState();
   renderGame();
   showToast('已清空本局输入');
@@ -1323,8 +1314,9 @@ function clearHand() {
 function sumChanges(list) {
   const res = [0, 0, 0, 0];
   (list || []).forEach(k => {
-    if (!k.changes) return;
-    for (let i = 0; i < 4; i++) res[i] += k.changes[i];
+    const c = k.changes || k.baseChanges;
+    if (!c) return;
+    for (let i = 0; i < 4; i++) res[i] += c[i];
   });
   return res.map(v => +v.toFixed(2));
 }
@@ -1377,6 +1369,7 @@ function renderHandPanel() {
   const resEl = document.getElementById('hand-result');
   const sumEl = document.getElementById('hand-summary-content');
   if (!kongsEl || !resEl || !sumEl) return;
+  renderHandHorses();
 
   if (!hand.kongs || hand.kongs.length === 0) {
     kongsEl.innerHTML = '<span class="hand-empty-text">本局暂无杠</span>';
@@ -1398,14 +1391,77 @@ function renderHandPanel() {
     sumEl.innerHTML = '<span class="hand-empty-text">记录胡牌后预览</span>';
     return;
   }
-  const kongChanges = sumChanges(hand.kongs);
-  const winChanges = hand.win.changes || [0, 0, 0, 0];
-  const changes = winChanges.map((v, i) => +(v + kongChanges[i]).toFixed(2));
+  const changes = handChanges(hand);
   sumEl.innerHTML = changes.map((c, i) => {
     const cls = c > 0 ? 's-pos' : c < 0 ? 's-neg' : 's-zero';
     const sign = c > 0 ? '+' : '';
     return `<div class="hand-summary-row"><span>${esc(state.players[i])}</span><span class="${cls}">${sign}${fmt(c)}</span></div>`;
   }).join('');
+}
+
+// 本局合计：杠基础 + 胡牌基础 + 马结算（胡牌的马 + 每条杠的马）
+function handChanges(hand) {
+  hand = hand || { kongs: [], win: null, horses: [] };
+  const winChanges = (hand.win && hand.win.changes) || [0, 0, 0, 0];
+  const kongChanges = sumChanges(hand.kongs);
+  const base = winChanges.map((v, i) => +(v + kongChanges[i]).toFixed(2));
+  const horses = hand.horses || [];
+  if (horses.length === 0) return base;
+  const deltas = [0, 0, 0, 0];
+  if (hand.win) {
+    const winAfter = applyHorses(winChanges, hand.win.winner, horses);
+    for (let i = 0; i < 4; i++) deltas[i] += winAfter[i] - winChanges[i];
+  }
+  (hand.kongs || []).forEach(k => {
+    const kongBase = k.baseChanges || k.changes || [0, 0, 0, 0];
+    const kongAfter = applyKongHorses(kongBase, k.maker, k.kongType, k.discarder, horses);
+    for (let i = 0; i < 4; i++) deltas[i] += kongAfter[i] - kongBase[i];
+  });
+  return base.map((v, i) => +(v + deltas[i]).toFixed(2));
+}
+
+function renderHandHorses() {
+  const grid = document.getElementById('hand-horse-grid');
+  if (!grid) return;
+  const hand = state.currentHand || { kongs: [], win: null, horses: [] };
+  const horses = hand.horses || [];
+  const total = horses.length;
+  let html = `<button class="player-select-btn ${total === 0 ? 'selected' : ''}" onclick="clearHandHorses()" style="color:var(--text-sec);">未中马${total > 0 ? `（已买 ${total} 匹，点此清空）` : ''}</button>`;
+  html += state.players.map((name, i) => {
+    const n = horses.filter(h => h === i).length;
+    const tag = i === state.dealer ? '（庄）' : '';
+    return `<div class="horse-counter ${n > 0 ? 'selected' : ''}" data-pi="${i}">
+      <span class="horse-name">${esc(name)}${tag}</span>
+      <span class="horse-ctrl">
+        <button onclick="decHandHorse(${i})" ${n === 0 ? 'disabled' : ''} aria-label="减一匹">−</button>
+        <span class="horse-n">${n > 0 ? '🐴×' + n : '—'}</span>
+        <button onclick="incHandHorse(${i})" aria-label="加一匹">＋</button>
+      </span>
+    </div>`;
+  }).join('');
+  grid.innerHTML = html;
+}
+
+function incHandHorse(i) {
+  state.currentHand = state.currentHand || { kongs: [], win: null, horses: [] };
+  state.currentHand.horses.push(i);
+  saveState();
+  renderGame();
+}
+
+function decHandHorse(i) {
+  const hand = state.currentHand || { kongs: [], win: null, horses: [] };
+  const idx = (hand.horses || []).indexOf(i);
+  if (idx >= 0) hand.horses.splice(idx, 1);
+  saveState();
+  renderGame();
+}
+
+function clearHandHorses() {
+  state.currentHand = state.currentHand || { kongs: [], win: null, horses: [] };
+  state.currentHand.horses = [];
+  saveState();
+  renderGame();
 }
 
 function removeHandKong(i) {
@@ -1418,10 +1474,9 @@ function removeHandKong(i) {
 
 // ==================== Win Modal ====================
 function openWinModal() {
-  winState = { winner: -1, type: 'zimo', discarder: -1, mult: 1, customMult: false, types: [], haidi: false, horses: [] };
+  winState = { winner: -1, type: 'zimo', discarder: -1, mult: 1, customMult: false, types: [], haidi: false };
   renderWinPlayerGrid();
   renderDiscarderGrid();
-  renderHorseGrid();
   renderHandTypeGroups();
   renderWinPreview();
 
@@ -1435,8 +1490,6 @@ function openWinModal() {
   };
   syncCustomUI();
   syncMultUI();
-
-  document.getElementById('horse-section').style.display = state.config.horseOn ? 'block' : 'none';
 
   document.querySelectorAll('#win-type .toggle-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.val === 'zimo');
@@ -1469,48 +1522,6 @@ function selectWinWinner(i) {
   if (winState.discarder === i) winState.discarder = -1;
   renderWinPlayerGrid();
   renderDiscarderGrid();
-  renderHorseGrid();
-  renderWinPreview();
-}
-
-function renderHorseGrid() {
-  const grid = document.getElementById('horse-grid');
-  document.getElementById('horse-dealer-name').textContent = state.players[state.dealer];
-  const total = winState.horses.length;
-  let html = `<button class="player-select-btn ${total === 0 ? 'selected' : ''}" onclick="clearHorses()" style="color:var(--text-sec);">未中马${total > 0 ? `（已买 ${total} 匹，点此清空）` : ''}</button>`;
-  html += state.players.map((name, i) => {
-    const n = winState.horses.filter(h => h === i).length;
-    const tag = i === winState.winner && i === state.dealer ? '（庄·胡）'
-      : i === winState.winner ? '（胡）'
-      : i === state.dealer ? '（庄）' : '';
-    return `<div class="horse-counter ${n > 0 ? 'selected' : ''}" data-pi="${i}">
-      <span class="horse-name">${esc(name)}${tag}</span>
-      <span class="horse-ctrl">
-        <button onclick="decHorse(${i})" ${n === 0 ? 'disabled' : ''} aria-label="减一匹">−</button>
-        <span class="horse-n">${n > 0 ? '🐴×' + n : '—'}</span>
-        <button onclick="incHorse(${i})" aria-label="加一匹">＋</button>
-      </span>
-    </div>`;
-  }).join('');
-  grid.innerHTML = html;
-}
-
-function incHorse(i) {
-  winState.horses.push(i);
-  renderHorseGrid();
-  renderWinPreview();
-}
-
-function decHorse(i) {
-  const idx = winState.horses.indexOf(i);
-  if (idx >= 0) winState.horses.splice(idx, 1);
-  renderHorseGrid();
-  renderWinPreview();
-}
-
-function clearHorses() {
-  winState.horses = [];
-  renderHorseGrid();
   renderWinPreview();
 }
 
@@ -1646,9 +1657,6 @@ function confirmWin() {
   if (!(winState.mult > 0)) { showToast('请填写倍数'); return; }
 
   const baseChanges = calcWin(winState.winner, winState.type, winState.discarder, winState.mult);
-  const winChanges = state.config.horseOn
-    ? applyHorses(baseChanges, winState.winner, winState.horses)
-    : baseChanges;
   state.currentHand = state.currentHand || { kongs: [], win: null };
   state.currentHand.win = {
     winner: winState.winner,
@@ -1658,11 +1666,10 @@ function confirmWin() {
     haidi: winState.haidi,
     customMult: winState.customMult,
     mult: winState.mult,
-    horses: state.config.horseOn ? [...winState.horses] : [],
     dealerAt: state.dealer,
     dealerBefore: state.dealer,
     baseChanges,
-    changes: winChanges,
+    changes: baseChanges,
     timestamp: Date.now(),
   };
   saveState();
@@ -1673,14 +1680,11 @@ function confirmWin() {
 
 // ==================== Kong Modal ====================
 function openKongModal() {
-  kongState = { type: 'an', maker: -1, discarder: -1, horses: [] };
+  kongState = { type: 'an', maker: -1, discarder: -1 };
   renderKongPlayerGrid();
   renderKongDiscarderGrid();
-  renderKongHorseGrid();
   renderKongPreview();
   updateKongHint();
-
-  document.getElementById('kong-horse-section').style.display = state.config.horseOn ? 'block' : 'none';
 
   document.querySelectorAll('#kong-type .toggle-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.val === 'an');
@@ -1691,7 +1695,6 @@ function openKongModal() {
       kongState.discarder = -1;
       document.getElementById('kong-discarder-section').style.display = kongState.type === 'ming' ? 'block' : 'none';
       renderKongDiscarderGrid();
-      renderKongHorseGrid();
       renderKongPreview();
       updateKongHint();
     };
@@ -1722,48 +1725,6 @@ function selectKongMaker(i) {
   if (kongState.discarder === i) kongState.discarder = -1;
   renderKongPlayerGrid();
   renderKongDiscarderGrid();
-  renderKongHorseGrid();
-  renderKongPreview();
-}
-
-function renderKongHorseGrid() {
-  const grid = document.getElementById('kong-horse-grid');
-  document.getElementById('kong-horse-dealer-name').textContent = state.players[state.dealer];
-  const total = kongState.horses.length;
-  let html = `<button class="player-select-btn ${total === 0 ? 'selected' : ''}" onclick="clearKongHorses()" style="color:var(--text-sec);">未中马${total > 0 ? `（已买 ${total} 匹，点此清空）` : ''}</button>`;
-  html += state.players.map((name, i) => {
-    const n = kongState.horses.filter(h => h === i).length;
-    const tag = i === kongState.maker ? '（杠）'
-      : (kongState.type === 'ming' && i === kongState.discarder) ? '（点杠）'
-      : i === state.dealer ? '（庄）' : '';
-    return `<div class="horse-counter ${n > 0 ? 'selected' : ''}" data-pi="${i}">
-      <span class="horse-name">${esc(name)}${tag}</span>
-      <span class="horse-ctrl">
-        <button onclick="decKongHorse(${i})" ${n === 0 ? 'disabled' : ''} aria-label="减一匹">−</button>
-        <span class="horse-n">${n > 0 ? '🐴×' + n : '—'}</span>
-        <button onclick="incKongHorse(${i})" aria-label="加一匹">＋</button>
-      </span>
-    </div>`;
-  }).join('');
-  grid.innerHTML = html;
-}
-
-function incKongHorse(i) {
-  kongState.horses.push(i);
-  renderKongHorseGrid();
-  renderKongPreview();
-}
-
-function decKongHorse(i) {
-  const idx = kongState.horses.indexOf(i);
-  if (idx >= 0) kongState.horses.splice(idx, 1);
-  renderKongHorseGrid();
-  renderKongPreview();
-}
-
-function clearKongHorses() {
-  kongState.horses = [];
-  renderKongHorseGrid();
   renderKongPreview();
 }
 
@@ -1778,7 +1739,6 @@ function renderKongDiscarderGrid() {
 function selectKongDiscarder(i) {
   kongState.discarder = i;
   renderKongDiscarderGrid();
-  renderKongHorseGrid();
   renderKongPreview();
 }
 
@@ -1787,18 +1747,13 @@ function confirmKong() {
   if (kongState.type === 'ming' && kongState.discarder < 0) { showToast('请选择点杠人'); return; }
 
   const baseChanges = calcKong(kongState.maker, kongState.type, kongState.discarder);
-  const changes = state.config.horseOn
-    ? applyKongHorses(baseChanges, kongState.maker, kongState.type, kongState.discarder, kongState.horses)
-    : baseChanges;
   state.currentHand = state.currentHand || { kongs: [], win: null };
   state.currentHand.kongs.push({
     maker: kongState.maker,
     kongType: kongState.type,
     discarder: kongState.discarder,
-    horses: state.config.horseOn ? [...kongState.horses] : [],
     dealerAt: state.dealer,
     baseChanges,
-    changes,
     timestamp: Date.now(),
   });
   saveState();
@@ -1840,8 +1795,18 @@ function copySettlement() {
     text += '\n📋 对局明细：\n';
     state.rounds.forEach((r, i) => {
       const kongs = Array.isArray(r.kongs) ? r.kongs : [];
+      const handHorses = Array.isArray(r.horses) ? r.horses : [];
       let line = `${i + 1}. `;
-      if (kongs.length > 0) line += kongs.map(k => kongEntryDesc(k)).join('；') + '；';
+      if (kongs.length > 0) {
+        line += kongs.map(k => {
+          let d = kongEntryDesc(k);
+          if (handHorses.length > 0) {
+            const notes = kongHorseNotesText(k.maker, k.kongType, k.discarder, handHorses, k.dealerAt);
+            if (notes.length > 0) d += '　' + notes.join('；');
+          }
+          return d;
+        }).join('；') + '；';
+      }
       line += winEntryText(r);
       const horseDesc = winHorseDesc(r);
       if (horseDesc) line += '　' + horseDesc;
@@ -1896,7 +1861,7 @@ function confirmNewGame() {
   if (confirm('确定要新开一局吗？当前数据将被清除。')) {
     state.scores = [0, 0, 0, 0];
     state.rounds = [];
-    state.currentHand = { kongs: [], win: null };
+    state.currentHand = { kongs: [], win: null, horses: [] };
     state.dealer = 0;
     state.gameStarted = true;
     saveState();
