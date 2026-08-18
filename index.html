@@ -328,6 +328,8 @@ body {
 .pool-amount { font-size: 27px; font-weight: 800; color: #A97B14; font-variant-numeric: tabular-nums; }
 
 .sessions-section { margin-bottom: 16px; }
+.sessions-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.sessions-count { font-size: 12px; color: var(--ink2); font-weight: 600; }
 .session-item {
   display: flex; align-items: center; gap: 10px;
   background: var(--card); border-radius: 14px; padding: 12px 14px;
@@ -335,9 +337,17 @@ body {
 }
 .session-item.active { border-color: var(--brand); background: var(--brand-w); }
 .session-item-main { flex: 1; min-width: 0; }
+.session-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
 .session-name { font-size: 15px; font-weight: 700; color: var(--ink); }
-.session-date { font-size: 12px; color: var(--ink2); margin-left: 8px; }
-.session-players { font-size: 12px; color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-date { font-size: 12px; color: var(--ink2); }
+.session-scores { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.ss-item { font-size: 12px; color: var(--ink2); font-variant-numeric: tabular-nums; }
+.ss-item b { margin-right: 3px; font-weight: 600; color: var(--ink); }
+.ss-pos { color: var(--win); font-weight: 600; }
+.ss-neg { color: var(--loss); }
+.ss-zero { color: var(--ink3); }
+.ss-first { background: #FFF4CE; color: #9A5B00; padding: 1px 6px; border-radius: 6px; font-weight: 700; }
+.ss-first b { color: #9A5B00; }
 .session-del { border: none; background: none; font-size: 16px; cursor: pointer; padding: 6px; opacity: .55; flex-shrink: 0; }
 .session-del:active { opacity: 1; transform: scale(.9); }
 .session-arrow { color: var(--ink3); font-size: 18px; flex-shrink: 0; }
@@ -563,12 +573,19 @@ body {
     <button class="link-btn" onclick="backFromSettlement()">← 返回当前盘</button>
   </div>
   <div class="sessions-section" id="sessions-section" style="display:none;">
-    <div class="detail-title">📚 过往盘</div>
-    <div id="sessions-list"></div>
+    <div class="sessions-head">
+      <span class="detail-title">📚 过往盘</span>
+      <span class="sessions-count" id="sessions-count"></span>
+    </div>
     <div class="session-filter" id="session-filter">
+      <div class="toggle-group" id="sess-range">
+        <button class="toggle-btn active" data-r="today" onclick="setSessRange('today')">今日</button>
+        <button class="toggle-btn" data-r="all" onclick="setSessRange('all')">全部</button>
+      </div>
       <input type="date" id="session-date-filter" onchange="filterSessions()">
       <button class="mini-btn" onclick="clearSessionFilter()">清除筛选</button>
     </div>
+    <div id="sessions-list"></div>
   </div>
   <div class="standings" id="standings"></div>
   <div class="pool-section" id="pool-section" style="display:none;">
@@ -735,7 +752,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.3';
+const APP_VERSION = '1.9.4';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -856,7 +873,7 @@ HAND_TYPES.forEach(t => { HAND_TYPE_MAP[t.id] = t; });
 let winState = { winner: -1, type: 'zimo', discarder: -1, mult: 1, customMult: false, types: [], haidi: false };
 let kongState = { type: 'an', maker: -1, discarder: -1 };
 let viewCtx = null; // 正在查看的过往盘数据（null=当前盘）
-let sessionDateFilter = ''; // 过往盘按日期筛选
+let sessionDateFilter = dateOf(Date.now()); // 默认显示今日
 
 function activeCtx() {
   if (viewCtx) return viewCtx;
@@ -1271,31 +1288,53 @@ function renderSettlement() {
 function renderSessionsList() {
   const section = document.getElementById('sessions-section');
   const list = document.getElementById('sessions-list');
+  const countEl = document.getElementById('sessions-count');
+  const dateInput = document.getElementById('session-date-filter');
   if (!section || !list) return;
-  const list2 = state.sessions.filter(s => !sessionDateFilter || dateOf(s.createdAt) === sessionDateFilter);
+  if (dateInput) dateInput.value = sessionDateFilter || '';
+  const isToday = sessionDateFilter === dateOf(Date.now());
+  document.querySelectorAll('#sess-range .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.r === (isToday ? 'today' : sessionDateFilter ? 'all' : 'all')));
   if (state.sessions.length === 0) {
     section.style.display = 'none';
     return;
   }
   section.style.display = 'block';
-  list.innerHTML = (list2.length === 0
-    ? '<div style="font-size:12px;color:var(--text-sec);padding:8px 0;">该日期暂无盘</div>'
+  const list2 = state.sessions.filter(s => !sessionDateFilter || dateOf(s.createdAt) === sessionDateFilter);
+  const totalRounds = list2.reduce((a, s) => a + (s.rounds ? s.rounds.length : 0), 0);
+  const label = sessionDateFilter ? (isToday ? '今日' : sessionDateFilter) : '全部';
+  if (countEl) countEl.textContent = `${label} · ${list2.length} 盘 · ${totalRounds} 局`;
+  list.innerHTML = list2.length === 0
+    ? '<div style="font-size:12px;color:var(--ink3);padding:10px 0;">该日期暂无盘</div>'
     : list2.slice().reverse().map(s => {
-    const nameLine = esc(s.name);
-    const date = new Date(s.createdAt || Date.now());
-    const dateStr = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
-    const playersLine = s.players.map((p, i) => p).join(' · ');
-    const isViewing = viewCtx && viewCtx.id === s.id;
-    return `<div class="session-item ${isViewing ? 'active' : ''}" onclick="viewSession(${s.id})">
-      <div class="session-item-main">
-        <span class="session-name">${nameLine}</span>
-        <span class="session-date">${dateStr} · ${s.rounds.length} 局</span>
-      </div>
-      <div class="session-players">${esc(playersLine)}</div>
-      <button class="session-del" onclick="event.stopPropagation();deleteSession(${s.id})" title="删除这盘">🗑</button>
-      <span class="session-arrow">›</span>
-    </div>`;
-  }).join(''));
+        const date = new Date(s.createdAt || Date.now());
+        const dateStr = `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+        const ranked = (s.scores || []).map((sc, i) => ({ sc, i })).sort((a, b) => b.sc - a.sc);
+        const first = ranked[0];
+        const scoresHtml = (s.players || []).map((p, i) => {
+          const sc = (s.scores || [])[i] || 0;
+          const isFirst = first && first.sc > 0 && first.i === i;
+          const cls = sc > 0 ? 'ss-pos' : sc < 0 ? 'ss-neg' : 'ss-zero';
+          return `<span class="ss-item ${isFirst ? 'ss-first' : ''} ${cls}"><b>${esc(p)}</b>${sc > 0 ? '+' : ''}${fmt(sc)}</span>`;
+        }).join('');
+        const isViewing = viewCtx && viewCtx.id === s.id;
+        return `<div class="session-item ${isViewing ? 'active' : ''}" onclick="viewSession(${s.id})">
+          <div class="session-item-main">
+            <div class="session-head"><span class="session-name">${esc(s.name)}</span><span class="session-date">${dateStr} · ${s.rounds ? s.rounds.length : 0} 局</span></div>
+            <div class="session-scores">${scoresHtml}</div>
+          </div>
+          <button class="session-del" onclick="event.stopPropagation();deleteSession(${s.id})" title="删除这盘">🗑</button>
+          <span class="session-arrow">›</span>
+        </div>`;
+      }).join('');
+}
+
+function setSessRange(r) {
+  if (r === 'today') {
+    sessionDateFilter = dateOf(Date.now());
+  } else {
+    sessionDateFilter = '';
+  }
+  renderSessionsList();
 }
 
 function dateOf(ts) {
