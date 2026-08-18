@@ -1433,6 +1433,7 @@ function openWinModal() {
       winState.discarder = -1;
       document.getElementById('discarder-section').style.display = winState.type === 'zimo' ? 'none' : 'block';
       updateDiscarderLabel();
+      syncMultUI(); // 杠爆 +3 等随胡牌方式联动
       renderDiscarderGrid();
       renderWinPreview();
     };
@@ -1516,7 +1517,11 @@ function selectDiscarder(i) {
 function updateMultHint() {
   const hint = document.getElementById('mult-pay-hint');
   if (!hint) return;
-  hint.textContent = `每家付 ${fmt(perPay(winState.mult))} 分（底分 ${fmt(state.config.baseScore)} × ${fmt(winState.mult)}）`;
+  const parts = [];
+  if (winState.haidi) parts.push('海底+3');
+  if (winState.type === 'gangbao') parts.push('杠爆+3');
+  const extra = parts.length > 0 ? `，含${parts.join('、')}` : '';
+  hint.textContent = `每家付 ${fmt(perPay(winState.mult))} 分（底分 ${fmt(state.config.baseScore)} × ${fmt(winState.mult)}${extra}）`;
 }
 
 // ===== 牌型选择与倍数计算 =====
@@ -1530,8 +1535,9 @@ function effectiveMult() {
       const t = HAND_TYPE_MAP[id];
       if (t) m += t.mult;
     });
-    if (winState.haidi) m += 3;
     m = Math.max(1, m); // 平胡 = 1倍
+    if (winState.haidi) m += 3;          // 海底捞月 +3
+    if (winState.type === 'gangbao') m += 3; // 杠爆 +3
   }
   const cap = state.config.maxMult;
   if (cap > 0 && m > cap) return cap; // 胡牌倍数上限
