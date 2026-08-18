@@ -195,13 +195,6 @@ body {
   border: none; background: none; color: var(--text-sec); font-size: 18px;
   cursor: pointer; padding: 6px 10px; flex-shrink: 0;
 }
-.result-row { display: flex; gap: 8px; margin-bottom: 8px; }
-.result-btn {
-  flex: 1; padding: 11px; border: 2px solid var(--border); border-radius: var(--radius-sm);
-  background: var(--card-bg); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-}
-.result-btn.selected { border-color: var(--accent); background: var(--table-light); color: var(--table-dark); }
-.result-tag { font-size: 13px; font-weight: 600; color: var(--table-dark); }
 .hand-summary {
   background: var(--bg); border-radius: var(--radius-sm); padding: 10px; margin: 4px 0 12px;
 }
@@ -463,9 +456,9 @@ body {
     </div>
 
     <div class="hand-section">
-      <div class="hand-section-head"><span class="hand-section-label">胡牌</span></div>
-      <div class="result-row">
-        <button class="result-btn" id="result-win" onclick="openWinModal()">🎉 记录胡牌</button>
+      <div class="hand-section-head">
+        <span class="hand-section-label">胡牌情况</span>
+        <button class="mini-btn" onclick="openWinModal()">＋ 添加胡牌</button>
       </div>
       <div id="hand-result" class="hand-empty"><span class="hand-empty-text">尚未记录胡牌</span></div>
     </div>
@@ -1380,12 +1373,12 @@ function renderHandPanel() {
   }
 
   if (hand.win) {
-    resEl.innerHTML = `<span class="result-tag">🎉 ${winEntryText(hand.win)}</span>`;
+    resEl.className = '';
+    resEl.innerHTML = `<div class="hand-kong-row"><span>🎉 ${winEntryText(hand.win)}</span><button class="row-del" onclick="clearHandWin()" title="移除胡牌记录">✕</button></div>`;
   } else {
+    resEl.className = 'hand-empty';
     resEl.innerHTML = '<span class="hand-empty-text">尚未记录胡牌</span>';
   }
-  const winBtn = document.getElementById('result-win');
-  if (winBtn) winBtn.classList.toggle('selected', !!hand.win);
 
   if (!hand.win) {
     sumEl.innerHTML = '<span class="hand-empty-text">记录胡牌后预览</span>';
@@ -1460,6 +1453,13 @@ function decHandHorse(i) {
 function clearHandHorses() {
   state.currentHand = state.currentHand || { kongs: [], win: null, horses: [] };
   state.currentHand.horses = [];
+  saveState();
+  renderGame();
+}
+
+function clearHandWin() {
+  state.currentHand = state.currentHand || { kongs: [], win: null, horses: [] };
+  state.currentHand.win = null;
   saveState();
   renderGame();
 }
