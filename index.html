@@ -50,7 +50,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.screen { display: none; padding: 14px 16px 24px; }
+.screen { display: none; padding: 10px 16px 20px; }
 .screen.active { display: block; animation: fadeIn .28s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -63,12 +63,12 @@ body {
   width: 52px; height: 52px; border-radius: 15px;
   background: linear-gradient(150deg, #2E6B50, #4C8A6C); box-shadow: 0 8px 22px rgba(46,107,80,.28);
 }
-.setup-header h1 { font-size: 24px; margin-top: 8px; font-weight: 800; color: var(--ink); letter-spacing: .4px; }
+.setup-header h1 { font-size: 24px; margin-top: 6px; font-weight: 800; color: var(--ink); letter-spacing: .4px; }
 .setup-header p { font-size: 13px; color: var(--ink2); margin-top: 3px; }
 
 .section-title {
   font-size: 15px; font-weight: 700; color: var(--ink);
-  margin: 14px 2px 8px; display: flex; align-items: center; gap: 8px;
+  margin: 10px 2px 8px; display: flex; align-items: center; gap: 8px;
 }
 .section-title::before { content: ''; width: 4px; height: 16px; background: var(--brand); border-radius: 2px; }
 
@@ -435,7 +435,7 @@ body {
 
   <div style="margin-bottom:4px;">
     <input type="text" id="cfg-session-name" placeholder="📚 盘名（可选，默认自动用日期）" maxlength="20"
-      style="width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:12px;font-size:15px;background:var(--bg);">
+      style="width:100%;padding:9px 14px;border:1px solid var(--line);border-radius:12px;font-size:15px;background:var(--bg);">
   </div>
 
   <div class="section-title">玩家设置</div>
