@@ -390,9 +390,16 @@ body {
 .chart-legend-item { display: flex; align-items: center; gap: 4px; }
 .chart-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
 
-.settlement-actions { display: grid; gap: 10px; }
+.settlement-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .settlement-actions .btn-primary { background: var(--table-green); }
 .settlement-actions .btn-secondary { margin-top: 0; }
+.back-btn {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 38px; height: 38px; border-radius: 50%; border: none;
+  background: var(--card-bg); box-shadow: var(--shadow); font-size: 18px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.back-btn:active { transform: translateY(-50%) scale(0.92); }
 .update-bar {
   display: flex; align-items: center; justify-content: center; gap: 10px;
   margin-top: 14px; padding-bottom: 4px;
@@ -537,7 +544,10 @@ body {
 
 <!-- ===== Settlement Screen ===== -->
 <div id="settlement-screen" class="screen">
-  <div class="settlement-title">📊 统计表</div>
+  <div style="position:relative;">
+    <button class="back-btn" onclick="backToGame()" title="返回游戏">←</button>
+    <div class="settlement-title">📊 统计表</div>
+  </div>
   <div class="standings" id="standings"></div>
   <div class="pool-section" id="pool-section" style="display:none;">
     <div class="pool-title">🪙 共享奖池</div>
@@ -558,7 +568,6 @@ body {
   </div>
   <div class="settlement-actions">
     <button class="btn-primary" onclick="copySettlement()">📋 复制结算单</button>
-    <button class="btn-secondary" onclick="backToGame()">返回游戏</button>
     <button class="btn-secondary" onclick="confirmNewGame()">🔄 新开一局</button>
   </div>
   <div class="update-bar">
@@ -682,7 +691,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -2097,6 +2106,11 @@ async function updateApp() {
     if ('serviceWorker' in navigator) {
       const reg = await navigator.serviceWorker.getRegistration();
       if (reg) await reg.update();
+    }
+    // 清掉旧缓存，确保重载后拿到最新版
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
     }
   } catch (e) {}
   location.reload();
