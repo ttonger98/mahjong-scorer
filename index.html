@@ -249,6 +249,27 @@ body {
 .ht-chip.selected .ht-mult { color: #fff; }
 .ht-chip:active { transform: scale(.97); }
 
+/* 配置编辑器 */
+.ced-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ced-row > span { font-size: 13px; color: var(--ink2); }
+.ced-row input[type="number"] {
+  width: 62px; padding: 8px 6px; border: 1px solid var(--line); border-radius: 10px;
+  text-align: center; font-size: 15px; font-weight: 600; background: var(--bg);
+}
+.ced-types { max-height: 38vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px; background: var(--bg); }
+.ced-type-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid #EDEFEA; }
+.ced-type-row:last-child { border-bottom: none; }
+.ced-type-row > span { font-size: 13px; }
+.ced-type-row input[type="number"] {
+  width: 62px; padding: 7px 6px; border: 1px solid var(--line); border-radius: 9px;
+  text-align: center; font-size: 14px; font-weight: 600; background: #fff;
+}
+.ced-type-row input[type="text"] {
+  padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px;
+  font-size: 13px; background: #fff;
+}
+.ced-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
 /* 马匹计数 */
 #hand-horse-grid { display: flex; flex-direction: column; gap: 8px; }
 .horse-counter {
@@ -403,6 +424,9 @@ body {
 
 <!-- ===== Setup Screen ===== -->
 <div id="setup-screen" class="screen active">
+  <div style="position:relative;height:0;">
+    <button class="icon-btn" onclick="showConfigScreen()" title="配置管理" style="position:absolute;top:0;right:0;z-index:5;">⚙️</button>
+  </div>
   <div class="setup-header">
     <div class="logo">🀄</div>
     <h1>麻将计分器</h1>
@@ -441,6 +465,10 @@ body {
   <div class="section-title">规则设置</div>
   <div class="config-group">
     <div class="config-row">
+      <label>本盘配置</label>
+      <select id="cfg-config" onchange="updateConfigNote()" style="max-width:150px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:var(--bg);color:var(--ink);"></select>
+    </div>
+    <div class="config-row">
       <label>底分</label>
       <input type="number" id="cfg-base" value="1" min="0.5" step="0.5">
     </div>
@@ -458,10 +486,7 @@ body {
         <span style="font-size:12px;color:var(--text-sec);">分</span>
       </div>
     </div>
-    <div style="font-size:12px;color:var(--text-sec);line-height:1.6;padding:6px 0 2px;">
-      杠（固定，无需设置）：暗杠＝底分×1（三家各付）｜明杠＝底分×1.5（点杠人付）｜加杠＝底分×0.5（三家各付）
-      <br>庄家固定买马
-    </div>
+    <div style="font-size:12px;color:var(--text-sec);line-height:1.6;padding:6px 0 2px;" id="config-note"></div>
   </div>
 
   <div style="margin-top: 10px;">
@@ -486,7 +511,7 @@ body {
   <div class="hand-panel">
     <div class="hand-panel-title">🀄 本局牌况</div>
 
-    <div class="hand-section">
+    <div class="hand-section" id="horse-section">
       <div class="hand-section-head">
         <span class="hand-section-label">🐴 中马情况（庄家买马，同一人可中多匹）</span>
         <button class="mini-btn" onclick="clearHandHorses()">清空</button>
@@ -569,6 +594,16 @@ body {
   </div>
 </div>
 
+<!-- ===== 配置管理 ===== -->
+<div id="config-screen" class="screen">
+  <div style="position:relative;">
+    <button class="back-btn" onclick="backFromConfig()" title="返回">←</button>
+    <div class="settlement-title">⚙️ 配置管理</div>
+  </div>
+  <div id="config-list"></div>
+  <button class="btn-secondary" onclick="openConfigEditor('new')">＋ 新建配置</button>
+</div>
+
 <!-- ===== 对局详情 Modal ===== -->
 <div class="modal-overlay" id="hand-detail-modal">
   <div class="modal" style="position:relative;">
@@ -577,6 +612,19 @@ body {
     <div id="hand-detail-body"></div>
     <div class="modal-actions">
       <button class="btn-primary" onclick="closeModal('hand-detail-modal')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 配置编辑器 Modal ===== -->
+<div class="modal-overlay" id="config-editor-modal">
+  <div class="modal" style="position:relative;">
+    <button class="modal-close" onclick="closeConfigEditor()">✕</button>
+    <div class="modal-title" id="config-editor-title">编辑配置</div>
+    <div id="config-editor-body"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeConfigEditor()">取消</button>
+      <button class="btn-primary" onclick="saveConfig()">💾 保存</button>
     </div>
   </div>
 </div>
@@ -684,7 +732,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.8.3';
+const APP_VERSION = '1.9.0';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -692,6 +740,8 @@ const state = {
   activeId: null,                     // 当前盘 id
   sessionName: '',                    // 当前盘名
   sessionCreatedAt: 0,
+  configs: [],                        // 用户自定义配置（多套）
+  activeConfigId: 'default',          // 当前盘选用的配置
   players: ['东家', '南家', '西家', '北家'],
   scores: [0, 0, 0, 0],
   rounds: [],
@@ -707,6 +757,8 @@ const state = {
     kongMing: 1.5,
     kongJia: 0.5,
     horseOn: true,
+    types: {},                        // 标准牌型倍数覆盖（当前配置）
+    customTypes: [],                  // 自定义牌型（当前配置）
   },
   gameStarted: false,
 };
@@ -720,7 +772,30 @@ const CONFIG_DEFAULTS = {
   kongMing: 1.5,
   kongJia: 0.5,
   horseOn: true,
+  types: {},
+  customTypes: [],
 };
+
+// 内置默认配置（当前这套：28 牌型 / 暗杠1·明杠1.5·加杠0.5 / 庄家买马 / 上限100）
+const DEFAULT_CONFIG = {
+  id: 'default',
+  name: '默认配置',
+  kongAn: 1, kongMing: 1.5, kongJia: 0.5,
+  horseOn: true,
+  maxMult: 100,
+  types: {},
+  customTypes: [],
+};
+
+// 当前生效配置的牌型解析（含自定义牌型与倍数覆盖）
+function typeInfo(id) {
+  const custom = (state.config.customTypes || []).find(t => t.id === id);
+  if (custom) return custom;
+  const t = HAND_TYPE_MAP[id];
+  if (!t) return null;
+  const over = (state.config.types || {})[id];
+  return { id: t.id, name: t.name, mult: (over != null ? over : t.mult), group: t.group };
+}
 
 // ==================== 牌型目录（28 种，来自《麻将牌型倍数层级与示例》） ====================
 const HAND_TYPE_GROUPS = [
@@ -1380,7 +1455,7 @@ function winTypeText(w) {
     : w.winType === 'qianggang' ? `（${esc(state.players[w.discarder])}被抢杠）`
     : w.winType === 'gangbao' ? `（${esc(state.players[w.discarder])}放杠）`
     : '';
-  const typeTags = (w.types || []).map(id => (HAND_TYPE_MAP[id] || {}).name || '').filter(Boolean);
+  const typeTags = (w.types || []).map(id => (typeInfo(id) || {}).name || '').filter(Boolean);
   let d = `${typeName} ×${fmt(w.mult)}倍${loserTag}`;
   if (w.haidi) d += '（海底）';
   if (typeTags.length) d += `【${typeTags.join('、')}】`;
@@ -1399,14 +1474,232 @@ function horseHitsText(horses) {
   return Object.keys(counts).map(hk => `中${esc(state.players[+hk])}×${counts[hk]}`).join('、');
 }
 
+// ==================== 配置管理 ====================
+let editingConfig = null;
+
+function configSummary(cfg) {
+  const typeCount = HAND_TYPES.length + (cfg.customTypes || []).length;
+  return `杠：暗${cfg.kongAn}／明${cfg.kongMing}／加${cfg.kongJia}｜马：${cfg.horseOn ? '开' : '关'}｜上限：${cfg.maxMult}｜牌型 ${typeCount} 种`;
+}
+
+function showConfigScreen() {
+  renderConfigList();
+  showScreen('config');
+}
+
+function backFromConfig() {
+  showScreen('setup');
+  initSetup();
+}
+
+function renderConfigList() {
+  const list = document.getElementById('config-list');
+  if (!list) return;
+  let html = `<div class="session-item" style="cursor:default;">
+    <div class="session-item-main">
+      <div class="session-name">📄 默认配置</div>
+      <div class="session-players">${configSummary(DEFAULT_CONFIG)}</div>
+    </div>
+    <button class="mini-btn" onclick="openConfigEditor('new')">以此新建</button>
+  </div>`;
+  state.configs.forEach(cfg => {
+    html += `<div class="session-item" style="cursor:default;">
+      <div class="session-item-main">
+        <div class="session-name">${esc(cfg.name)}</div>
+        <div class="session-players">${configSummary(cfg)}</div>
+      </div>
+      <button class="mini-btn" onclick="openConfigEditor('${cfg.id}')">编辑</button>
+      <button class="session-del" onclick="deleteConfig('${cfg.id}')" title="删除这套配置">🗑</button>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+function cloneConfig(cfg) {
+  return {
+    id: cfg.id,
+    name: cfg.name,
+    kongAn: cfg.kongAn, kongMing: cfg.kongMing, kongJia: cfg.kongJia,
+    horseOn: !!cfg.horseOn,
+    maxMult: cfg.maxMult,
+    types: Object.assign({}, cfg.types || {}),
+    customTypes: (cfg.customTypes || []).map(t => ({ id: t.id, name: t.name, mult: t.mult })),
+  };
+}
+
+function openConfigEditor(id) {
+  if (id === 'new') {
+    editingConfig = cloneConfig(DEFAULT_CONFIG);
+    editingConfig.id = 'new';
+    editingConfig.name = '';
+  } else {
+    const src = state.configs.find(c => c.id === id) || DEFAULT_CONFIG;
+    editingConfig = cloneConfig(src);
+  }
+  renderConfigEditor();
+  document.getElementById('config-editor-modal').classList.add('active');
+}
+
+function closeConfigEditor() {
+  editingConfig = null;
+  document.getElementById('config-editor-modal').classList.remove('active');
+}
+
+function setCedHorse(v) {
+  if (!editingConfig) return;
+  editingConfig.horseOn = v === 1;
+  document.querySelectorAll('#ced-horse .toggle-btn').forEach(b => b.classList.toggle('active', (b.dataset.v === '1') === editingConfig.horseOn));
+}
+
+function addCustomTypeRow() {
+  editingConfig.customTypes.push({ id: 'ct' + Date.now() + Math.floor(Math.random() * 1000), name: '', mult: 1 });
+  renderConfigEditor();
+}
+
+function removeCustomTypeRow(i) {
+  editingConfig.customTypes.splice(i, 1);
+  renderConfigEditor();
+}
+
+function resetTypeMults() {
+  editingConfig.types = {};
+  renderConfigEditor();
+}
+
+function renderConfigEditor() {
+  const body = document.getElementById('config-editor-body');
+  if (!body || !editingConfig) return;
+  const cfg = editingConfig;
+  document.getElementById('config-editor-title').textContent = cfg.id === 'new' ? '新建配置' : '编辑配置';
+  const rows = HAND_TYPES.map(t => {
+    const over = (cfg.types || {})[t.id];
+    const val = over != null ? over : t.mult;
+    return `<div class="ced-type-row"><span>${esc(t.name)}</span><input type="number" class="ced-type-mult" data-id="${t.id}" value="${val}" min="0" step="0.5"></div>`;
+  }).join('');
+  const customs = (cfg.customTypes || []).map((t, i) =>
+    `<div class="ced-type-row"><input type="text" class="ced-custom-name" data-i="${i}" value="${esc(t.name)}" placeholder="牌型名" maxlength="8" style="flex:1;min-width:0;"><input type="number" class="ced-custom-mult" data-i="${i}" value="${t.mult}" min="0" step="0.5" style="width:62px;"><button class="session-del" onclick="removeCustomTypeRow(${i})">🗑</button></div>`
+  ).join('');
+  body.innerHTML = `
+    <div class="modal-section">
+      <div class="modal-section-label">配置名称</div>
+      <input type="text" id="ced-name" value="${esc(cfg.name)}" maxlength="20" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;font-size:15px;background:var(--bg);">
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">杠规则（底分×倍数）</div>
+      <div class="ced-row">
+        <span>暗杠</span><input type="number" id="ced-kong-an" value="${cfg.kongAn}" min="0" step="0.5">
+        <span>明杠</span><input type="number" id="ced-kong-ming" value="${cfg.kongMing}" min="0" step="0.5">
+        <span>加杠</span><input type="number" id="ced-kong-jia" value="${cfg.kongJia}" min="0" step="0.5">
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">马 / 胡牌倍数上限</div>
+      <div class="ced-row">
+        <span>买马</span>
+        <div class="toggle-group" id="ced-horse"><button class="toggle-btn ${cfg.horseOn ? 'active' : ''}" data-v="1" onclick="setCedHorse(1)">开</button><button class="toggle-btn ${!cfg.horseOn ? 'active' : ''}" data-v="0" onclick="setCedHorse(0)">关</button></div>
+        <span>上限</span><input type="number" id="ced-max-mult" value="${cfg.maxMult}" min="0" step="1">
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">牌型倍数（可直接改，支持自定义）</div>
+      <div class="ced-types">${rows}${customs}</div>
+      <div class="ced-actions">
+        <button class="mini-btn" onclick="addCustomTypeRow()">＋ 添加自定义牌型</button>
+        <button class="mini-btn" onclick="resetTypeMults()">恢复默认倍数</button>
+      </div>
+    </div>`;
+}
+
+function saveConfig() {
+  if (!editingConfig) return;
+  const cfg = editingConfig;
+  cfg.name = document.getElementById('ced-name').value.trim() || `配置${state.configs.length + 1}`;
+  cfg.kongAn = parseFloat(document.getElementById('ced-kong-an').value) || 0;
+  cfg.kongMing = parseFloat(document.getElementById('ced-kong-ming').value) || 0;
+  cfg.kongJia = parseFloat(document.getElementById('ced-kong-jia').value) || 0;
+  cfg.maxMult = parseFloat(document.getElementById('ced-max-mult').value);
+  if (!Number.isFinite(cfg.maxMult) || cfg.maxMult < 0) cfg.maxMult = 0;
+  document.querySelectorAll('.ced-type-mult').forEach(inp => {
+    const v = parseFloat(inp.value);
+    cfg.types[inp.dataset.id] = Number.isFinite(v) && v > 0 ? v : 1;
+  });
+  document.querySelectorAll('.ced-custom-name').forEach(inp => {
+    const i = +inp.dataset.i;
+    const n = inp.value.trim();
+    if (cfg.customTypes[i]) cfg.customTypes[i].name = n;
+  });
+  document.querySelectorAll('.ced-custom-mult').forEach(inp => {
+    const i = +inp.dataset.i;
+    const v = parseFloat(inp.value);
+    if (cfg.customTypes[i]) cfg.customTypes[i].mult = Number.isFinite(v) && v > 0 ? v : 1;
+  });
+  cfg.customTypes = cfg.customTypes.filter(t => t.name);
+  if (cfg.id === 'new') {
+    cfg.id = 'c' + Date.now();
+    state.configs.push(cloneConfig(cfg));
+  } else {
+    const idx = state.configs.findIndex(c => c.id === cfg.id);
+    if (idx >= 0) state.configs[idx] = cloneConfig(cfg);
+  }
+  saveState();
+  closeConfigEditor();
+  renderConfigList();
+  populateConfigSelect();
+  showToast('配置已保存');
+}
+
+function deleteConfig(id) {
+  const cfg = state.configs.find(c => c.id === id);
+  if (!cfg) return;
+  if (confirm(`确定删除配置「${cfg.name}」吗？`)) {
+    state.configs = state.configs.filter(c => c.id !== id);
+    if (state.activeConfigId === id) state.activeConfigId = 'default';
+    saveState();
+    renderConfigList();
+    populateConfigSelect();
+    showToast('已删除配置');
+  }
+}
+
+function populateConfigSelect() {
+  const sel = document.getElementById('cfg-config');
+  if (!sel) return;
+  let html = '<option value="default">默认配置</option>';
+  state.configs.forEach(c => { html += `<option value="${c.id}">${esc(c.name)}</option>`; });
+  sel.innerHTML = html;
+  sel.value = state.activeConfigId || 'default';
+}
+
+function updateConfigNote() {
+  const el = document.getElementById('config-note');
+  if (!el) return;
+  const sel = document.getElementById('cfg-config');
+  const id = sel ? sel.value : 'default';
+  const cfg = id === 'default' ? DEFAULT_CONFIG : (state.configs.find(c => c.id === id) || DEFAULT_CONFIG);
+  el.innerHTML = `杠：暗杠＝底分×${fmt(cfg.kongAn)}（三家各付）｜明杠＝底分×${fmt(cfg.kongMing)}（点杠人付）｜加杠＝底分×${fmt(cfg.kongJia)}（三家各付）<br>庄家买马：${cfg.horseOn ? '开' : '关'}｜胡牌倍数上限：${cfg.maxMult > 0 ? fmt(cfg.maxMult) + ' 倍' : '无上限'}`;
+}
+
+function applyConfig(cfg) {
+  cfg = cfg || DEFAULT_CONFIG;
+  state.config.kongAn = cfg.kongAn;
+  state.config.kongMing = cfg.kongMing;
+  state.config.kongJia = cfg.kongJia;
+  state.config.horseOn = !!cfg.horseOn;
+  state.config.maxMult = cfg.maxMult;
+  state.config.types = Object.assign({}, cfg.types || {});
+  state.config.customTypes = (cfg.customTypes || []).map(t => ({ id: t.id, name: t.name, mult: t.mult }));
+}
+
 // ==================== Setup ====================
 function initSetup() {
   const nameInput = document.getElementById('cfg-session-name');
   if (nameInput) nameInput.value = ''; // 回到首页时盘名重新命名
+  populateConfigSelect();
   document.getElementById('cfg-base').value = state.config.baseScore;
   document.getElementById('cfg-max-mult').value = state.config.maxMult;
   document.getElementById('cfg-rake-th').value = state.config.rakeTh;
   document.getElementById('cfg-rake-rate').value = state.config.rakeRate;
+  updateConfigNote();
 
   for (let i = 0; i < 4; i++) {
     const input = document.getElementById(`setup-p${i}`);
@@ -1434,6 +1727,11 @@ function readSetupConfig() {
 function startGame() {
   archiveCurrentSession(); // 开新盘前，先把进行中的盘存入历史
   readSetupConfig();
+  // 应用所选配置
+  const selId = document.getElementById('cfg-config').value || 'default';
+  state.activeConfigId = selId;
+  const cfg = selId === 'default' ? DEFAULT_CONFIG : (state.configs.find(c => c.id === selId) || DEFAULT_CONFIG);
+  applyConfig(cfg);
   const name = document.getElementById('cfg-session-name').value.trim() || makeSessionName();
   state.activeId = Date.now();
   state.sessionName = name;
@@ -1474,6 +1772,7 @@ function archiveCurrentSession() {
   state.sessions.push({
     id: state.activeId || Date.now(),
     name: state.sessionName || makeSessionName(),
+    configId: state.activeConfigId || 'default',
     players: [...state.players],
     config: Object.assign({}, state.config),
     scores: [...state.scores],
@@ -1584,7 +1883,7 @@ function winEntryText(w) {
     : w.winType === 'qianggang' ? `（${esc(state.players[w.discarder])}被抢杠）`
     : w.winType === 'gangbao' ? `（${esc(state.players[w.discarder])}放杠）`
     : '';
-  const typeTags = (Array.isArray(w.types) ? w.types : []).map(id => (HAND_TYPE_MAP[id] || {}).name || '').filter(Boolean);
+  const typeTags = (Array.isArray(w.types) ? w.types : []).map(id => (typeInfo(id) || {}).name || '').filter(Boolean);
   let d = `${esc(state.players[w.winner])} ${typeName} ×${fmt(w.mult)}倍${loserTag}`;
   if (w.haidi) d += '（海底捞月）';
   if (typeTags.length > 0) d += `【${typeTags.join('、')}】`;
@@ -1593,6 +1892,8 @@ function winEntryText(w) {
 
 function renderHandPanel() {
   const hand = state.currentHand || { kongs: [], wins: [], horses: [] };
+  const horseSec = document.getElementById('horse-section');
+  if (horseSec) horseSec.style.display = state.config.horseOn ? '' : 'none';
   const kongsEl = document.getElementById('hand-kongs');
   const resEl = document.getElementById('hand-result');
   const sumEl = document.getElementById('hand-summary-content');
@@ -1656,7 +1957,7 @@ function handChanges(hand) {
   });
   const kongChanges = sumChanges(hand.kongs);
   const base = winBase.map((v, i) => +(v + kongChanges[i]).toFixed(2));
-  const horses = hand.horses || [];
+  const horses = state.config.horseOn ? (hand.horses || []) : [];
   if (horses.length === 0) return base;
   const deltas = [0, 0, 0, 0];
   wins.forEach(w => {
@@ -1683,7 +1984,7 @@ function handBreakdown(hand) {
     for (let i = 0; i < 4; i++) win[i] += c[i];
   });
   const horse = [0, 0, 0, 0];
-  const horses = hand.horses || [];
+  const horses = state.config.horseOn ? (hand.horses || []) : [];
   if (horses.length > 0) {
     wins.forEach(w => {
       const c = w.changes || w.baseChanges || [0, 0, 0, 0];
@@ -1863,7 +2164,7 @@ function effectiveMult() {
   } else {
     m = 0;
     winState.types.forEach(id => {
-      const t = HAND_TYPE_MAP[id];
+      const t = typeInfo(id);
       if (t) m += t.mult;
     });
     m = Math.max(1, m); // 平胡 = 1倍
@@ -1878,19 +2179,29 @@ function effectiveMult() {
 function renderHandTypeGroups() {
   const wrap = document.getElementById('handtype-groups');
   if (!wrap) return;
-  wrap.innerHTML = HAND_TYPE_GROUPS.map(g => {
+  let html = HAND_TYPE_GROUPS.map(g => {
     const chips = HAND_TYPES.filter(t => t.group === g.key).map(t => {
+      const info = typeInfo(t.id);
       const sel = winState.types.indexOf(t.id) >= 0;
-      return `<button class="ht-chip ${sel ? 'selected' : ''}" onclick="selectHandType('${t.id}')">${t.name}<span class="ht-mult">×${t.mult}</span></button>`;
+      return `<button class="ht-chip ${sel ? 'selected' : ''}" onclick="selectHandType('${t.id}')">${info.name}<span class="ht-mult">×${info.mult}</span></button>`;
     }).join('');
     return `<div class="ht-group"><div class="ht-group-label">${g.label}</div><div class="ht-chips">${chips}</div></div>`;
   }).join('');
+  const customs = state.config.customTypes || [];
+  if (customs.length > 0) {
+    const chips = customs.map(t => {
+      const sel = winState.types.indexOf(t.id) >= 0;
+      return `<button class="ht-chip ${sel ? 'selected' : ''}" onclick="selectHandType('${t.id}')">${esc(t.name)}<span class="ht-mult">×${t.mult}</span></button>`;
+    }).join('');
+    html += `<div class="ht-group"><div class="ht-group-label">自定义牌型</div><div class="ht-chips">${chips}</div></div>`;
+  }
+  wrap.innerHTML = html;
   const haidiBtn = document.getElementById('ht-haidi');
   if (haidiBtn) haidiBtn.classList.toggle('selected', winState.haidi);
 }
 
 function selectHandType(id) {
-  const t = HAND_TYPE_MAP[id];
+  const t = typeInfo(id);
   if (!t) return;
   if (winState.types.indexOf(id) >= 0) {
     winState.types = winState.types.filter(x => x !== id);
@@ -2017,7 +2328,8 @@ function updateKongHint() {
   const share = kongShare(kongState.type);
   const name = kongState.type === 'an' ? '暗杠' : kongState.type === 'ming' ? '明杠' : '加杠';
   const payer = kongState.type === 'ming' ? '点杠人付' : '三家各付';
-  el.textContent = `${name}＝底分×${kongState.type === 'an' ? 1 : kongState.type === 'ming' ? 1.5 : 0.5}（${payer}）＝${fmt(share)} 分`;
+  const mult = kongState.type === 'an' ? state.config.kongAn : kongState.type === 'ming' ? state.config.kongMing : state.config.kongJia;
+  el.textContent = `${name}＝底分×${fmt(mult)}（${payer}）＝${fmt(share)} 分`;
 }
 
 function renderKongPlayerGrid() {
