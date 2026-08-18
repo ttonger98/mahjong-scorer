@@ -570,35 +570,39 @@ body {
     <div class="settlement-title" id="settlement-title">📊 统计表</div>
   </div>
   <div id="back-from-view" style="display:none;text-align:center;margin-bottom:10px;">
-    <button class="link-btn" onclick="backFromSettlement()">← 返回当前盘</button>
+    <button class="link-btn" onclick="backFromSettlement()">← 返回战绩列表</button>
   </div>
-  <div class="sessions-section" id="sessions-section" style="display:none;">
-    <div class="sessions-head">
-      <span class="detail-title">📚 过往盘</span>
-      <span class="sessions-count" id="sessions-count"></span>
-    </div>
-    <div class="session-filter" id="session-filter">
-      <div class="toggle-group" id="sess-range">
-        <button class="toggle-btn active" data-r="today" onclick="setSessRange('today')">今日</button>
-        <button class="toggle-btn" data-r="all" onclick="setSessRange('all')">全部</button>
+  <div id="zhanji-view">
+    <div class="sessions-section" id="sessions-section" style="display:none;">
+      <div class="sessions-head">
+        <span class="detail-title">📚 过往盘</span>
+        <span class="sessions-count" id="sessions-count"></span>
       </div>
-      <input type="date" id="session-date-filter" onchange="filterSessions()">
-      <button class="mini-btn" onclick="clearSessionFilter()">清除筛选</button>
+      <div class="session-filter" id="session-filter">
+        <div class="toggle-group" id="sess-range">
+          <button class="toggle-btn active" data-r="today" onclick="setSessRange('today')">今日</button>
+          <button class="toggle-btn" data-r="all" onclick="setSessRange('all')">全部</button>
+        </div>
+        <input type="date" id="session-date-filter" onchange="filterSessions()">
+        <button class="mini-btn" onclick="clearSessionFilter()">清除筛选</button>
+      </div>
+      <div id="sessions-list"></div>
     </div>
-    <div id="sessions-list"></div>
   </div>
-  <div class="standings" id="standings"></div>
-  <div class="pool-section" id="pool-section" style="display:none;">
-    <div class="pool-title">🪙 共享奖池</div>
-    <div class="pool-amount" id="pool-amount">0</div>
-  </div>
-  <div class="detail-section">
-    <div class="detail-title">📋 对局明细</div>
-    <div id="hand-details"></div>
-  </div>
-  <div class="transfers-section" id="transfers-section">
-    <div class="transfers-title">💸 转账明细</div>
-    <div id="transfers-list"></div>
+  <div id="session-detail-view" style="display:none;">
+    <div class="standings" id="standings"></div>
+    <div class="pool-section" id="pool-section" style="display:none;">
+      <div class="pool-title">🪙 共享奖池</div>
+      <div class="pool-amount" id="pool-amount">0</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">📋 对局明细</div>
+      <div id="hand-details"></div>
+    </div>
+    <div class="transfers-section" id="transfers-section">
+      <div class="transfers-title">💸 转账明细</div>
+      <div id="transfers-list"></div>
+    </div>
   </div>
   <div class="settlement-actions">
     <button class="btn-primary" onclick="copySettlement()">📋 复制结算单</button>
@@ -752,7 +756,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.4';
+const APP_VERSION = '1.9.5';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -1231,6 +1235,26 @@ function renderKongPreview() {
 }
 
 function renderSettlement() {
+  const titleEl = document.getElementById('settlement-title');
+  const backFrom = document.getElementById('back-from-view');
+  const zhanjiView = document.getElementById('zhanji-view');
+  const detailView = document.getElementById('session-detail-view');
+  if (viewCtx) {
+    if (titleEl) titleEl.textContent = `📊 ${viewCtx.name || '盘详情'}`;
+    if (backFrom) backFrom.style.display = 'block';
+    if (zhanjiView) zhanjiView.style.display = 'none';
+    if (detailView) detailView.style.display = 'block';
+    renderDetailView();
+  } else {
+    if (titleEl) titleEl.textContent = '📊 统计表';
+    if (backFrom) backFrom.style.display = 'none';
+    if (zhanjiView) zhanjiView.style.display = 'block';
+    if (detailView) detailView.style.display = 'none';
+    renderSessionsList();
+  }
+}
+
+function renderDetailView() {
   const ctx = activeCtx();
   const standings = document.getElementById('standings');
   const sorted = ctx.players.map((name, i) => ({ name, score: ctx.scores[i], pi: i }))
@@ -1258,12 +1282,6 @@ function renderSettlement() {
       poolSec.style.display = 'none';
     }
   }
-
-  const titleEl = document.getElementById('settlement-title');
-  const backFrom = document.getElementById('back-from-view');
-  if (titleEl) titleEl.textContent = viewCtx ? `📊 ${viewCtx.name || '过往盘'}` : '📊 统计表';
-  if (backFrom) backFrom.style.display = viewCtx ? 'block' : 'none';
-  renderSessionsList();
 
   const transfers = calculateSettlement();
   const tList = document.getElementById('transfers-list');
@@ -1293,39 +1311,50 @@ function renderSessionsList() {
   if (!section || !list) return;
   if (dateInput) dateInput.value = sessionDateFilter || '';
   const isToday = sessionDateFilter === dateOf(Date.now());
-  document.querySelectorAll('#sess-range .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.r === (isToday ? 'today' : sessionDateFilter ? 'all' : 'all')));
-  if (state.sessions.length === 0) {
+  document.querySelectorAll('#sess-range .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.r === (isToday ? 'today' : 'all')));
+  if (state.sessions.length === 0 && !state.gameStarted) {
     section.style.display = 'none';
     return;
   }
   section.style.display = 'block';
   const list2 = state.sessions.filter(s => !sessionDateFilter || dateOf(s.createdAt) === sessionDateFilter);
-  const totalRounds = list2.reduce((a, s) => a + (s.rounds ? s.rounds.length : 0), 0);
+  const totalRounds = list2.reduce((a, s) => a + (s.rounds ? s.rounds.length : 0), 0) + (state.gameStarted ? state.rounds.length : 0);
+  const totalPan = list2.length + (state.gameStarted ? 1 : 0);
   const label = sessionDateFilter ? (isToday ? '今日' : sessionDateFilter) : '全部';
-  if (countEl) countEl.textContent = `${label} · ${list2.length} 盘 · ${totalRounds} 局`;
-  list.innerHTML = list2.length === 0
-    ? '<div style="font-size:12px;color:var(--ink3);padding:10px 0;">该日期暂无盘</div>'
-    : list2.slice().reverse().map(s => {
-        const date = new Date(s.createdAt || Date.now());
-        const dateStr = `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
-        const ranked = (s.scores || []).map((sc, i) => ({ sc, i })).sort((a, b) => b.sc - a.sc);
-        const first = ranked[0];
-        const scoresHtml = (s.players || []).map((p, i) => {
-          const sc = (s.scores || [])[i] || 0;
-          const isFirst = first && first.sc > 0 && first.i === i;
-          const cls = sc > 0 ? 'ss-pos' : sc < 0 ? 'ss-neg' : 'ss-zero';
-          return `<span class="ss-item ${isFirst ? 'ss-first' : ''} ${cls}"><b>${esc(p)}</b>${sc > 0 ? '+' : ''}${fmt(sc)}</span>`;
-        }).join('');
-        const isViewing = viewCtx && viewCtx.id === s.id;
-        return `<div class="session-item ${isViewing ? 'active' : ''}" onclick="viewSession(${s.id})">
-          <div class="session-item-main">
-            <div class="session-head"><span class="session-name">${esc(s.name)}</span><span class="session-date">${dateStr} · ${s.rounds ? s.rounds.length : 0} 局</span></div>
-            <div class="session-scores">${scoresHtml}</div>
-          </div>
-          <button class="session-del" onclick="event.stopPropagation();deleteSession(${s.id})" title="删除这盘">🗑</button>
-          <span class="session-arrow">›</span>
-        </div>`;
-      }).join('');
+  if (countEl) countEl.textContent = `${label} · ${totalPan} 盘 · ${totalRounds} 局`;
+  let html = '';
+  if (state.gameStarted) {
+    html += sessionCardHtml({
+      id: 'current', name: (state.sessionName || '当前盘') + '（进行中）',
+      players: state.players, scores: state.scores, rounds: state.rounds,
+      createdAt: state.sessionCreatedAt || Date.now(), isCurrent: true,
+    }, 'current');
+  }
+  html += list2.slice().reverse().map(s => sessionCardHtml(s, s.id)).join('');
+  list.innerHTML = html || '<div style="font-size:12px;color:var(--ink3);padding:10px 0;">该日期暂无盘</div>';
+}
+
+function sessionCardHtml(s, key) {
+  const date = new Date(s.createdAt || Date.now());
+  const dateStr = `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+  const ranked = (s.scores || []).map((sc, i) => ({ sc, i })).sort((a, b) => b.sc - a.sc);
+  const first = ranked[0];
+  const scoresHtml = (s.players || []).map((p, i) => {
+    const sc = (s.scores || [])[i] || 0;
+    const isFirst = first && first.sc > 0 && first.i === i;
+    const cls = sc > 0 ? 'ss-pos' : sc < 0 ? 'ss-neg' : 'ss-zero';
+    return `<span class="ss-item ${isFirst ? 'ss-first' : ''} ${cls}"><b>${esc(p)}</b>${sc > 0 ? '+' : ''}${fmt(sc)}</span>`;
+  }).join('');
+  const isViewing = viewCtx && viewCtx.id === key;
+  const del = s.isCurrent ? '' : `<button class="session-del" onclick="event.stopPropagation();deleteSession(${s.id})" title="删除这盘">🗑</button>`;
+  return `<div class="session-item ${isViewing ? 'active' : ''}" onclick="viewSession('${key}')">
+    <div class="session-item-main">
+      <div class="session-head"><span class="session-name">${esc(s.name)}</span><span class="session-date">${dateStr} · ${s.rounds ? s.rounds.length : 0} 局</span></div>
+      <div class="session-scores">${scoresHtml}</div>
+    </div>
+    ${del}
+    <span class="session-arrow">›</span>
+  </div>`;
 }
 
 function setSessRange(r) {
@@ -1366,7 +1395,19 @@ function deleteSession(id) {
 }
 
 function viewSession(id) {
-  const s = state.sessions.find(x => x.id === id);
+  let s;
+  if (id === 'current') {
+    s = {
+      id: 'current',
+      name: (state.sessionName || '当前盘') + '（进行中）',
+      players: [...state.players],
+      scores: [...state.scores],
+      rounds: state.rounds,
+      pool: state.pool,
+    };
+  } else {
+    s = state.sessions.find(x => String(x.id) === String(id));
+  }
   if (!s) return;
   viewCtx = {
     id: s.id,
