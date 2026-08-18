@@ -732,7 +732,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.0';
+const APP_VERSION = '1.9.1';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -757,6 +757,7 @@ const state = {
     kongMing: 1.5,
     kongJia: 0.5,
     horseOn: true,
+    horseKong: true,              // 马是否跟杠（中马时杠的分是否随马变）
     types: {},                        // 标准牌型倍数覆盖（当前配置）
     customTypes: [],                  // 自定义牌型（当前配置）
   },
@@ -772,6 +773,7 @@ const CONFIG_DEFAULTS = {
   kongMing: 1.5,
   kongJia: 0.5,
   horseOn: true,
+  horseKong: true,
   types: {},
   customTypes: [],
 };
@@ -782,6 +784,7 @@ const DEFAULT_CONFIG = {
   name: '默认配置',
   kongAn: 1, kongMing: 1.5, kongJia: 0.5,
   horseOn: true,
+  horseKong: true,
   maxMult: 100,
   types: {},
   customTypes: [],
@@ -1479,7 +1482,7 @@ let editingConfig = null;
 
 function configSummary(cfg) {
   const typeCount = HAND_TYPES.length + (cfg.customTypes || []).length;
-  return `杠：暗${cfg.kongAn}／明${cfg.kongMing}／加${cfg.kongJia}｜马：${cfg.horseOn ? '开' : '关'}｜上限：${cfg.maxMult}｜牌型 ${typeCount} 种`;
+  return `杠：暗${cfg.kongAn}／明${cfg.kongMing}／加${cfg.kongJia}｜马：${cfg.horseOn ? '开' : '关'}${cfg.horseOn ? (cfg.horseKong !== false ? '·跟杠' : '·不跟杠') : ''}｜上限：${cfg.maxMult}｜牌型 ${typeCount} 种`;
 }
 
 function showConfigScreen() {
@@ -1521,6 +1524,7 @@ function cloneConfig(cfg) {
     name: cfg.name,
     kongAn: cfg.kongAn, kongMing: cfg.kongMing, kongJia: cfg.kongJia,
     horseOn: !!cfg.horseOn,
+    horseKong: cfg.horseKong !== false,
     maxMult: cfg.maxMult,
     types: Object.assign({}, cfg.types || {}),
     customTypes: (cfg.customTypes || []).map(t => ({ id: t.id, name: t.name, mult: t.mult })),
@@ -1549,6 +1553,12 @@ function setCedHorse(v) {
   if (!editingConfig) return;
   editingConfig.horseOn = v === 1;
   document.querySelectorAll('#ced-horse .toggle-btn').forEach(b => b.classList.toggle('active', (b.dataset.v === '1') === editingConfig.horseOn));
+}
+
+function setCedHorseKong(v) {
+  if (!editingConfig) return;
+  editingConfig.horseKong = v === 1;
+  document.querySelectorAll('#ced-horse-kong .toggle-btn').forEach(b => b.classList.toggle('active', (b.dataset.v === '1') === editingConfig.horseKong));
 }
 
 function addCustomTypeRow() {
@@ -1597,8 +1607,11 @@ function renderConfigEditor() {
       <div class="ced-row">
         <span>买马</span>
         <div class="toggle-group" id="ced-horse"><button class="toggle-btn ${cfg.horseOn ? 'active' : ''}" data-v="1" onclick="setCedHorse(1)">开</button><button class="toggle-btn ${!cfg.horseOn ? 'active' : ''}" data-v="0" onclick="setCedHorse(0)">关</button></div>
+        <span>马跟杠</span>
+        <div class="toggle-group" id="ced-horse-kong"><button class="toggle-btn ${cfg.horseKong !== false ? 'active' : ''}" data-v="1" onclick="setCedHorseKong(1)">开</button><button class="toggle-btn ${cfg.horseKong === false ? 'active' : ''}" data-v="0" onclick="setCedHorseKong(0)">关</button></div>
         <span>上限</span><input type="number" id="ced-max-mult" value="${cfg.maxMult}" min="0" step="1">
       </div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:5px;">马跟杠=中马时杠的分随马变化；关=马只跟胡牌走，杠的分数不随马变。</div>
     </div>
     <div class="modal-section">
       <div class="modal-section-label">牌型倍数（可直接改，支持自定义）</div>
@@ -1676,7 +1689,7 @@ function updateConfigNote() {
   const sel = document.getElementById('cfg-config');
   const id = sel ? sel.value : 'default';
   const cfg = id === 'default' ? DEFAULT_CONFIG : (state.configs.find(c => c.id === id) || DEFAULT_CONFIG);
-  el.innerHTML = `杠：暗杠＝底分×${fmt(cfg.kongAn)}（三家各付）｜明杠＝底分×${fmt(cfg.kongMing)}（点杠人付）｜加杠＝底分×${fmt(cfg.kongJia)}（三家各付）<br>庄家买马：${cfg.horseOn ? '开' : '关'}｜胡牌倍数上限：${cfg.maxMult > 0 ? fmt(cfg.maxMult) + ' 倍' : '无上限'}`;
+  el.innerHTML = `杠：暗杠＝底分×${fmt(cfg.kongAn)}（三家各付）｜明杠＝底分×${fmt(cfg.kongMing)}（点杠人付）｜加杠＝底分×${fmt(cfg.kongJia)}（三家各付）<br>庄家买马：${cfg.horseOn ? '开' + (cfg.horseKong !== false ? '（跟杠）' : '（不跟杠）') : '关'}｜胡牌倍数上限：${cfg.maxMult > 0 ? fmt(cfg.maxMult) + ' 倍' : '无上限'}`;
 }
 
 function applyConfig(cfg) {
@@ -1685,6 +1698,7 @@ function applyConfig(cfg) {
   state.config.kongMing = cfg.kongMing;
   state.config.kongJia = cfg.kongJia;
   state.config.horseOn = !!cfg.horseOn;
+  state.config.horseKong = cfg.horseKong !== false;
   state.config.maxMult = cfg.maxMult;
   state.config.types = Object.assign({}, cfg.types || {});
   state.config.customTypes = (cfg.customTypes || []).map(t => ({ id: t.id, name: t.name, mult: t.mult }));
@@ -1965,11 +1979,13 @@ function handChanges(hand) {
     const winAfter = applyHorses(c, w.winner, horses);
     for (let i = 0; i < 4; i++) deltas[i] += winAfter[i] - c[i];
   });
-  (hand.kongs || []).forEach(k => {
-    const kongBase = k.baseChanges || k.changes || [0, 0, 0, 0];
-    const kongAfter = applyKongHorses(kongBase, k.maker, k.kongType, k.discarder, horses);
-    for (let i = 0; i < 4; i++) deltas[i] += kongAfter[i] - kongBase[i];
-  });
+  if (state.config.horseKong !== false) {
+    (hand.kongs || []).forEach(k => {
+      const kongBase = k.baseChanges || k.changes || [0, 0, 0, 0];
+      const kongAfter = applyKongHorses(kongBase, k.maker, k.kongType, k.discarder, horses);
+      for (let i = 0; i < 4; i++) deltas[i] += kongAfter[i] - kongBase[i];
+    });
+  }
   return base.map((v, i) => +(v + deltas[i]).toFixed(2));
 }
 
@@ -1991,11 +2007,13 @@ function handBreakdown(hand) {
       const a = applyHorses(c, w.winner, horses);
       for (let i = 0; i < 4; i++) horse[i] += a[i] - c[i];
     });
-    (hand.kongs || []).forEach(k => {
-      const kb = k.baseChanges || k.changes || [0, 0, 0, 0];
-      const a = applyKongHorses(kb, k.maker, k.kongType, k.discarder, horses);
-      for (let i = 0; i < 4; i++) horse[i] += a[i] - kb[i];
-    });
+    if (state.config.horseKong !== false) {
+      (hand.kongs || []).forEach(k => {
+        const kb = k.baseChanges || k.changes || [0, 0, 0, 0];
+        const a = applyKongHorses(kb, k.maker, k.kongType, k.discarder, horses);
+        for (let i = 0; i < 4; i++) horse[i] += a[i] - kb[i];
+      });
+    }
   }
   const net = [0, 0, 0, 0].map((_, i) => +(win[i] + kong[i] + horse[i]).toFixed(2));
   const rakes = rakeInfo(hand).rakes;
