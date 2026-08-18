@@ -215,6 +215,13 @@ body {
 .hand-summary-row .s-pos { color: var(--positive); font-weight: 700; }
 .hand-summary-row .s-neg { color: var(--negative); font-weight: 700; }
 .hand-summary-row .s-zero { color: var(--zero); }
+.hs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.hs-table th { text-align: right; padding: 4px 3px; font-size: 11px; color: var(--text-sec); font-weight: 700; border-bottom: 1px solid var(--border); }
+.hs-table th:first-child, .hs-table td:first-child { text-align: left; }
+.hs-table td { padding: 6px 3px; text-align: right; border-bottom: 1px solid #eef0ee; font-variant-numeric: tabular-nums; }
+.hs-table tr:last-child td { border-bottom: none; }
+.hs-total { font-weight: 800; font-size: 13px; }
+.hs-real { display: block; font-size: 10px; color: var(--text-sec); font-weight: 600; }
 .hand-bottom { display: flex; justify-content: space-between; margin-top: 10px; }
 .link-btn {
   border: none; background: none; color: var(--text-sec); font-size: 13px; cursor: pointer; padding: 8px 6px;
@@ -1544,14 +1551,25 @@ function renderHandPanel() {
     sumEl.innerHTML = '<span class="hand-empty-text">记录胡牌后预览</span>';
     return;
   }
-  const { after, rakes, poolAdd } = rakeInfo(hand);
-  sumEl.innerHTML = after.map((c, i) => {
-    const cls = c > 0 ? 's-pos' : c < 0 ? 's-neg' : 's-zero';
-    const sign = c > 0 ? '+' : '';
-    const rakeTag = rakes[i] > 0 ? ` <span style="font-size:11px;color:var(--text-sec);font-weight:600;">（抽水${fmt(rakes[i])}）</span>` : '';
-    return `<div class="hand-summary-row"><span>${esc(state.players[i])}</span><span class="${cls}">${sign}${fmt(c)}${rakeTag}</span></div>`;
-  }).join('') + (poolAdd > 0
-    ? `<div class="hand-summary-row" style="border-top:1px solid #e5e5e5;margin-top:4px;padding-top:4px;"><span>🪙 抽水合计（进奖池）</span><span class="s-neg">-${fmt(poolAdd)}</span></div>`
+  const bd = handBreakdown(hand);
+  const cell = (v) => `<span class="${v > 0 ? 'd-pos' : v < 0 ? 'd-neg' : 'd-zero'}">${v > 0 ? '+' : ''}${fmt(v)}</span>`;
+  sumEl.innerHTML = `<table class="hs-table"><thead><tr>
+    <th>玩家</th><th>杠</th><th>胡牌</th><th>马</th><th>合计输赢</th>
+  </tr></thead><tbody>` + state.players.map((name, pi) => {
+    const total = bd.net[pi];
+    const totalCls = total > 0 ? 'd-pos' : total < 0 ? 'd-neg' : 'd-zero';
+    const realTag = bd.rakes[pi] > 0
+      ? `<span class="hs-real">抽${fmt(bd.rakes[pi])} → 实得${bd.after[pi] > 0 ? '+' : ''}${fmt(bd.after[pi])}</span>`
+      : '';
+    return `<tr>
+      <td><span class="hdt-name"><span class="hdr-avatar" style="background:var(--p${pi + 1})">${esc(name.charAt(0))}</span>${esc(name)}</span></td>
+      <td>${cell(bd.kong[pi])}</td>
+      <td>${cell(bd.win[pi])}</td>
+      <td>${cell(bd.horse[pi])}</td>
+      <td><span class="${totalCls} hs-total">${total > 0 ? '+' : ''}${fmt(total)}</span>${realTag}</td>
+    </tr>`;
+  }).join('') + `</tbody></table>` + (bd.poolAdd > 0
+    ? `<div style="font-size:12px;color:#a97b14;font-weight:700;margin-top:6px;">🪙 抽水 ${fmt(bd.poolAdd)} 分进奖池</div>`
     : '');
 }
 
@@ -1580,6 +1598,36 @@ function handChanges(hand) {
     for (let i = 0; i < 4; i++) deltas[i] += kongAfter[i] - kongBase[i];
   });
   return base.map((v, i) => +(v + deltas[i]).toFixed(2));
+}
+
+// 本局分项：杠 / 胡牌 / 马 / 合计（抽水前）/ 各自抽水 / 实得
+function handBreakdown(hand) {
+  hand = hand || { kongs: [], wins: [], horses: [] };
+  const wins = hand.wins || [];
+  const kong = sumChanges(hand.kongs);
+  const win = [0, 0, 0, 0];
+  wins.forEach(w => {
+    const c = w.changes || w.baseChanges || [0, 0, 0, 0];
+    for (let i = 0; i < 4; i++) win[i] += c[i];
+  });
+  const horse = [0, 0, 0, 0];
+  const horses = hand.horses || [];
+  if (horses.length > 0) {
+    wins.forEach(w => {
+      const c = w.changes || w.baseChanges || [0, 0, 0, 0];
+      const a = applyHorses(c, w.winner, horses);
+      for (let i = 0; i < 4; i++) horse[i] += a[i] - c[i];
+    });
+    (hand.kongs || []).forEach(k => {
+      const kb = k.baseChanges || k.changes || [0, 0, 0, 0];
+      const a = applyKongHorses(kb, k.maker, k.kongType, k.discarder, horses);
+      for (let i = 0; i < 4; i++) horse[i] += a[i] - kb[i];
+    });
+  }
+  const net = [0, 0, 0, 0].map((_, i) => +(win[i] + kong[i] + horse[i]).toFixed(2));
+  const rakes = rakeInfo(hand).rakes;
+  const after = net.map((n, i) => +(n - rakes[i]).toFixed(2));
+  return { kong, win, horse, net, rakes, after, poolAdd: rakeInfo(hand).poolAdd };
 }
 
 // 抽水：只扣赢家（正分）满足条件的——每满 rakeTh 抽 rakeRate，进共享奖池
