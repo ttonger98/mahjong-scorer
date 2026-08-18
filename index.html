@@ -425,7 +425,7 @@ body {
 <!-- ===== Setup Screen ===== -->
 <div id="setup-screen" class="screen active">
   <div style="position:relative;height:0;">
-    <button class="icon-btn" onclick="showConfigScreen()" title="配置管理" style="position:absolute;top:0;right:0;z-index:5;">⚙️</button>
+    <button class="icon-btn" onclick="showConfigScreen()" title="配置管理" style="position:absolute;top:0;right:0;z-index:5;">🛠️</button>
   </div>
   <div class="setup-header">
     <div class="logo">🀄</div>
@@ -498,10 +498,12 @@ body {
 <!-- ===== Game Screen ===== -->
 <div id="game-screen" class="screen">
   <div class="game-header">
-    <div class="round-info" id="round-info">第 1 局</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="icon-btn" onclick="goSetup()" title="返回首页">🏠</button>
+      <div class="round-info" id="round-info">第 1 局</div>
+    </div>
     <div class="header-actions">
-      <button class="icon-btn" onclick="goSetup()" title="设置">⚙️</button>
-      <button class="icon-btn" onclick="showSettlement()" title="结算">📊</button>
+      <button class="icon-btn" onclick="showSettlement()" title="统计表">📊</button>
     </div>
   </div>
 
@@ -732,7 +734,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.1';
+const APP_VERSION = '1.9.2';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
