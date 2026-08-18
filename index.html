@@ -1178,7 +1178,8 @@ function renderHandDetails() {
     const changesStr = r.changes.map((c, pi) => {
       const sign = c > 0 ? '+' : '';
       const cls = c > 0 ? 'd-pos' : c < 0 ? 'd-neg' : 'd-zero';
-      return `<span class="${cls}">${esc(state.players[pi])} ${sign}${fmt(c)}</span>`;
+      const raked = (r.rakes && r.rakes[pi] > 0) ? `（抽${fmt(r.rakes[pi])}）` : '';
+      return `<span class="${cls}">${esc(state.players[pi])} ${sign}${fmt(c)}${raked}</span>`;
     }).join('　');
     return `<div class="detail-item">
       <div class="detail-head"><span class="detail-round">第 ${i + 1} 局</span><span class="detail-desc">${desc}</span></div>
@@ -1443,13 +1444,14 @@ function renderHandPanel() {
     sumEl.innerHTML = '<span class="hand-empty-text">记录胡牌后预览</span>';
     return;
   }
-  const { after, poolAdd } = rakeInfo(hand);
+  const { after, rakes, poolAdd } = rakeInfo(hand);
   sumEl.innerHTML = after.map((c, i) => {
     const cls = c > 0 ? 's-pos' : c < 0 ? 's-neg' : 's-zero';
     const sign = c > 0 ? '+' : '';
-    return `<div class="hand-summary-row"><span>${esc(state.players[i])}</span><span class="${cls}">${sign}${fmt(c)}</span></div>`;
+    const rakeTag = rakes[i] > 0 ? ` <span style="font-size:11px;color:var(--text-sec);font-weight:600;">（抽水${fmt(rakes[i])}）</span>` : '';
+    return `<div class="hand-summary-row"><span>${esc(state.players[i])}</span><span class="${cls}">${sign}${fmt(c)}${rakeTag}</span></div>`;
   }).join('') + (poolAdd > 0
-    ? `<div class="hand-summary-row" style="border-top:1px solid #e5e5e5;margin-top:4px;padding-top:4px;"><span>🪙 抽水（进奖池）</span><span class="s-neg">-${fmt(poolAdd)}</span></div>`
+    ? `<div class="hand-summary-row" style="border-top:1px solid #e5e5e5;margin-top:4px;padding-top:4px;"><span>🪙 抽水合计（进奖池）</span><span class="s-neg">-${fmt(poolAdd)}</span></div>`
     : '');
 }
 
@@ -1904,6 +1906,7 @@ function copySettlement() {
         if (hd) d += '　' + hd;
         return d;
       }).join('；');
+      if (r.poolAdd > 0) line += `　（抽水 ${fmt(r.poolAdd)} 分进奖池）`;
       text += line + '\n';
     });
   }
