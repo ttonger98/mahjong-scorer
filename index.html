@@ -20,25 +20,25 @@
 :root {
   --bg: #F2F2F7;              /* iOS 分组背景 */
   --card-bg: #FFFFFF;         /* 卡片 */
-  --table-green: #1E7B52;     /* 主色（麻将绿） */
-  --table-dark: #1C1C1E;      /* 主标题 */
-  --table-light: #E7F5EC;     /* 主色浅底 */
-  --text: #1C1C1E;            /* 一级文字 */
+  --table-green: #2F6B52;     /* 主色（柔和麻将绿） */
+  --table-dark: #24292F;      /* 主标题 */
+  --table-light: #E3ECE6;     /* 主色浅底 */
+  --text: #24292F;            /* 一级文字 */
   --text-sec: #8E8E93;        /* 二级文字（提示弱化） */
-  --positive: #FF3B30;        /* 赢（iOS 红） */
-  --negative: #34C759;        /* 输（iOS 绿） */
-  --zero: #C7C7CC;            /* 零/弱 */
-  --accent: #1E7B52;
-  --accent-light: #C8EAD8;
+  --positive: #C25E5C;        /* 赢（柔和红） */
+  --negative: #5F8F73;        /* 输（柔和绿） */
+  --zero: #ADADB3;            /* 零/弱 */
+  --accent: #2F6B52;
+  --accent-light: #C9DED2;
   --border: #E5E5EA;          /* iOS 分隔线 */
   --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.05);
   --shadow-lg: 0 8px 30px rgba(0,0,0,0.14);
   --radius: 14px;
   --radius-sm: 10px;
-  --p1: #FF3B30;
-  --p2: #007AFF;
-  --p3: #34C759;
-  --p4: #FF9500;
+  --p1: #C25E5C;              /* 玩家1 柔和红 */
+  --p2: #6E8FA8;              /* 玩家2 柔和蓝 */
+  --p3: #6A9B7D;              /* 玩家3 柔和绿 */
+  --p4: #C68E63;              /* 玩家4 柔和橙 */
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
@@ -73,8 +73,8 @@ body {
   font-size: 30px; line-height: 1;
   display: inline-flex; align-items: center; justify-content: center;
   width: 56px; height: 56px; border-radius: 18px;
-  background: linear-gradient(135deg, #1E7B52, #2FA26B);
-  box-shadow: 0 8px 20px rgba(30,123,82,0.35);
+  background: linear-gradient(135deg, #2F6B52, #4A8468);
+  box-shadow: 0 8px 20px rgba(47,107,82,0.28);
 }
 .setup-header h1 { font-size: 28px; margin-top: 8px; font-weight: 800; color: var(--table-dark); letter-spacing: 0.5px; }
 .setup-header p { font-size: 13px; color: var(--text-sec); margin-top: 3px; }
@@ -133,7 +133,7 @@ body {
 .btn-primary {
   width: 100%; padding: 13px; border: none; border-radius: 13px;
   background: var(--table-green); color: #fff; font-size: 17px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; box-shadow: 0 6px 16px rgba(30,123,82,0.28);
+  cursor: pointer; transition: all 0.2s; box-shadow: 0 6px 16px rgba(47,107,82,0.22);
 }
 .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
 .btn-secondary {
@@ -391,12 +391,6 @@ body {
 .transfer-item .t-amount { margin-left: auto; font-size: 20px; font-weight: 800; color: var(--table-green); font-variant-numeric: tabular-nums; }
 .transfer-item .t-unit { font-size: 14px; color: var(--text-sec); font-weight: 500; }
 
-.chart-section { background: var(--card-bg); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); margin-bottom: 20px; }
-.chart-title { font-size: 14px; font-weight: 600; color: var(--text-sec); margin-bottom: 10px; letter-spacing: 0.2px; }
-.chart-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 12px; }
-.chart-legend-item { display: flex; align-items: center; gap: 4px; }
-.chart-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
-
 .settlement-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .settlement-actions .btn-primary { background: var(--table-green); }
 .settlement-actions .btn-secondary { margin-top: 0; }
@@ -568,11 +562,6 @@ body {
     <div class="transfers-title">💸 转账明细</div>
     <div id="transfers-list"></div>
   </div>
-  <div class="chart-section">
-    <div class="chart-title">📈 分数走势</div>
-    <div id="chart-container"></div>
-    <div class="chart-legend" id="chart-legend"></div>
-  </div>
   <div class="settlement-actions">
     <button class="btn-primary" onclick="copySettlement()">📋 复制结算单</button>
     <button class="btn-secondary" onclick="confirmNewGame()">🔄 新开一局</button>
@@ -698,7 +687,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.7.1';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -1180,7 +1169,6 @@ function renderSettlement() {
   }
 
   renderHandDetails();
-  renderChart();
 }
 
 function winHorseDesc(w, horses) {
@@ -1308,85 +1296,6 @@ function horseHitsText(horses) {
   const counts = {};
   horses.forEach(h => counts[h] = (counts[h] || 0) + 1);
   return Object.keys(counts).map(hk => `中${esc(state.players[+hk])}×${counts[hk]}`).join('、');
-}
-
-function renderChart() {
-  const container = document.getElementById('chart-container');
-  const legend = document.getElementById('chart-legend');
-  const colors = ['#e63946', '#3a86ff', '#2a9d8f', '#f4a261'];
-
-  const data = [[0,0,0,0]];
-  let cum = [0, 0, 0, 0];
-  state.rounds.forEach(r => {
-    if (r.changes) {
-      cum = cum.map((v, i) => v + r.changes[i]);
-    }
-    data.push([...cum]);
-  });
-
-  const maxRounds = data.length;
-  const allValues = data.flat();
-  const rawMax = Math.max(...allValues, 1);
-  const rawMin = Math.min(...allValues, -1);
-
-  // 友好 Y 轴：步长取 2/5/10/20
-  const span = rawMax - rawMin;
-  const step = span > 60 ? 20 : span > 30 ? 10 : span > 12 ? 5 : 2;
-  const yMax = Math.ceil(rawMax / step) * step;
-  const yMin = Math.floor(rawMin / step) * step;
-
-  const W = 420, H = 200, padL = 36, padR = 12, padT = 12, padB = 24;
-  const plotW = W - padL - padR;
-  const plotH = H - padT - padB;
-  const xStep = maxRounds > 1 ? plotW / (maxRounds - 1) : 0;
-
-  const yTicks = [];
-  for (let v = yMin; v <= yMax; v += step) {
-    const y = padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
-    yTicks.push(`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#f0f0f0" stroke-width="1"/><text x="${padL-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#999">${v}</text>`);
-  }
-
-  const zeroY = padT + plotH - ((0 - yMin) / (yMax - yMin)) * plotH;
-
-  const lines = colors.map((color, pi) => {
-    const points = data.map((d, ri) => {
-      const x = padL + ri * xStep;
-      const y = padT + plotH - ((d[pi] - yMin) / (yMax - yMin)) * plotH;
-      return `${x},${y}`;
-    }).join(' ');
-    return `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-  }).join('');
-
-  const dots = colors.map((color, pi) => {
-    return data.map((d, ri) => {
-      const x = padL + ri * xStep;
-      const y = padT + plotH - ((d[pi] - yMin) / (yMax - yMin)) * plotH;
-      return `<circle cx="${x}" cy="${y}" r="2.5" fill="${color}"/>`;
-    }).join('');
-  }).join('');
-
-  const xLabels = [];
-  const labelStep = Math.max(1, Math.ceil(maxRounds / 6));
-  for (let i = 0; i < maxRounds; i += labelStep) {
-    const x = padL + i * xStep;
-    const label = i === 0 ? '开局' : `第${i}局`;
-    xLabels.push(`<text x="${x}" y="${H-6}" text-anchor="middle" font-size="9" fill="#999">${label}</text>`);
-  }
-
-  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;">
-    ${yTicks.join('')}
-    <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="#ddd" stroke-width="1" stroke-dasharray="3,3"/>
-    ${lines}
-    ${dots}
-    ${xLabels.join('')}
-  </svg>`;
-
-  legend.innerHTML = state.players.map((name, i) => {
-    return `<div class="chart-legend-item">
-      <div class="chart-legend-dot" style="background:${colors[i]}"></div>
-      <span>${esc(name)}</span>
-    </div>`;
-  }).join('');
 }
 
 // ==================== Setup ====================
