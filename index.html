@@ -106,6 +106,10 @@ body {
   text-align: center; font-size: 16px; font-weight: 600;
 }
 .config-row input[type="number"]:focus { outline: none; border-color: var(--accent); }
+.rake-input {
+  width: 56px; padding: 7px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+  text-align: center; font-size: 16px; font-weight: 600;
+}
 
 .toggle-group { display: flex; gap: 4px; background: #f0f0f0; border-radius: var(--radius-sm); padding: 3px; }
 .toggle-btn {
@@ -313,6 +317,14 @@ body {
 .standing-row .st-name { font-size: 16px; font-weight: 600; }
 .standing-row .st-score { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
 
+.pool-section {
+  background: linear-gradient(135deg, #f6e8c0, #fdeecd);
+  border-radius: var(--radius); padding: 14px; margin-bottom: 16px; text-align: center;
+  box-shadow: var(--shadow); border: 1px solid #e8d9a8;
+}
+.pool-title { font-size: 13px; font-weight: 700; color: #8a6d1d; }
+.pool-amount { font-size: 28px; font-weight: 800; color: #a97b14; font-variant-numeric: tabular-nums; }
+
 .detail-section { margin-bottom: 20px; }
 .detail-title { font-size: 14px; font-weight: 700; color: var(--table-dark); margin-bottom: 8px; }
 .detail-item {
@@ -411,6 +423,16 @@ body {
       <label>胡牌倍数上限（0＝无上限）</label>
       <input type="number" id="cfg-max-mult" value="100" min="0" step="1">
     </div>
+    <div class="config-row">
+      <label>抽水（0＝关闭）</label>
+      <div style="display:flex;align-items:center;gap:5px;">
+        <span style="font-size:12px;color:var(--text-sec);">满</span>
+        <input type="number" id="cfg-rake-th" value="30" min="0" step="1" class="rake-input">
+        <span style="font-size:12px;color:var(--text-sec);">抽</span>
+        <input type="number" id="cfg-rake-rate" value="5" min="0" step="0.5" class="rake-input">
+        <span style="font-size:12px;color:var(--text-sec);">分</span>
+      </div>
+    </div>
     <div style="font-size:12px;color:var(--text-sec);line-height:1.6;padding:6px 0 2px;">
       杠（固定，无需设置）：暗杠＝底分×1（三家各付）｜明杠＝底分×1.5（点杠人付）｜加杠＝底分×0.5（三家各付）
       <br>庄家固定买马
@@ -481,6 +503,10 @@ body {
 <div id="settlement-screen" class="screen">
   <div class="settlement-title">📊 统计表</div>
   <div class="standings" id="standings"></div>
+  <div class="pool-section" id="pool-section" style="display:none;">
+    <div class="pool-title">🪙 共享奖池</div>
+    <div class="pool-amount" id="pool-amount">0</div>
+  </div>
   <div class="detail-section">
     <div class="detail-title">📋 对局明细</div>
     <div id="hand-details"></div>
@@ -614,11 +640,14 @@ const state = {
   players: ['东家', '南家', '西家', '北家'],
   scores: [0, 0, 0, 0],
   rounds: [],
+  pool: 0,
   currentHand: { kongs: [], wins: [], horses: [] },
   dealer: 0,
   config: {
     baseScore: 1,
     maxMult: 100,
+    rakeTh: 30,
+    rakeRate: 5,
     kongAn: 1,
     kongMing: 1.5,
     kongJia: 0.5,
@@ -630,6 +659,8 @@ const state = {
 const CONFIG_DEFAULTS = {
   baseScore: 1,
   maxMult: 100,
+  rakeTh: 30,
+  rakeRate: 5,
   kongAn: 1,
   kongMing: 1.5,
   kongJia: 0.5,
@@ -1054,6 +1085,17 @@ function renderSettlement() {
     </div>`;
   }).join('');
 
+  const poolSec = document.getElementById('pool-section');
+  const poolAmt = document.getElementById('pool-amount');
+  if (poolSec && poolAmt) {
+    if (state.pool > 0) {
+      poolSec.style.display = 'block';
+      poolAmt.textContent = fmt(state.pool) + ' 分';
+    } else {
+      poolSec.style.display = 'none';
+    }
+  }
+
   const transfers = calculateSettlement();
   const tList = document.getElementById('transfers-list');
   const tSection = document.getElementById('transfers-section');
@@ -1216,6 +1258,8 @@ function renderChart() {
 function initSetup() {
   document.getElementById('cfg-base').value = state.config.baseScore;
   document.getElementById('cfg-max-mult').value = state.config.maxMult;
+  document.getElementById('cfg-rake-th').value = state.config.rakeTh;
+  document.getElementById('cfg-rake-rate').value = state.config.rakeRate;
 
   for (let i = 0; i < 4; i++) {
     const input = document.getElementById(`setup-p${i}`);
@@ -1229,6 +1273,10 @@ function readSetupConfig() {
   state.config.baseScore = parseFloat(document.getElementById('cfg-base').value) || 1;
   state.config.maxMult = parseFloat(document.getElementById('cfg-max-mult').value);
   if (!Number.isFinite(state.config.maxMult) || state.config.maxMult < 0) state.config.maxMult = 0;
+  state.config.rakeTh = parseFloat(document.getElementById('cfg-rake-th').value);
+  if (!Number.isFinite(state.config.rakeTh) || state.config.rakeTh < 0) state.config.rakeTh = 0;
+  state.config.rakeRate = parseFloat(document.getElementById('cfg-rake-rate').value);
+  if (!Number.isFinite(state.config.rakeRate) || state.config.rakeRate < 0) state.config.rakeRate = 0;
   for (let i = 0; i < 4; i++) {
     const val = document.getElementById(`setup-p${i}`).value.trim();
     state.players[i] = val || `玩家${i + 1}`;
@@ -1239,6 +1287,7 @@ function startGame() {
   readSetupConfig();
   state.scores = [0, 0, 0, 0];
   state.rounds = [];
+  state.pool = 0;
   state.currentHand = { kongs: [], wins: [], horses: [] };
   state.dealer = 0;
   state.gameStarted = true;
@@ -1280,14 +1329,15 @@ function settleHand() {
   const hand = state.currentHand || { kongs: [], wins: [], horses: [] };
   const wins = hand.wins || [];
   if (wins.length === 0) { showToast('请先记录胡牌'); return; }
-  const changes = handChanges(hand);
-  state.scores = state.scores.map((s, i) => +(s + changes[i]).toFixed(2));
-  state.rounds.push({ type: 'win', wins: wins.map(w => ({ ...w })), kongs: [...(hand.kongs || [])], horses: [...(hand.horses || [])], changes });
+  const { after, rakes, poolAdd } = rakeInfo(hand);
+  state.scores = state.scores.map((s, i) => +(s + after[i]).toFixed(2));
+  state.pool = +(state.pool + poolAdd).toFixed(2);
+  state.rounds.push({ type: 'win', wins: wins.map(w => ({ ...w })), kongs: [...(hand.kongs || [])], horses: [...(hand.horses || [])], changes: after, rakes, poolAdd });
   state.dealer = wins[0].winner; // 谁胡谁坐庄（一炮多响取第一条赢家）
   state.currentHand = { kongs: [], wins: [], horses: [] };
   saveState();
   renderGame();
-  showToast(`第 ${state.rounds.length} 局已结算`);
+  showToast(poolAdd > 0 ? `第 ${state.rounds.length} 局已结算（抽水 ${fmt(poolAdd)} 进奖池）` : `第 ${state.rounds.length} 局已结算`);
 }
 
 function undoLastHand() {
@@ -1393,12 +1443,14 @@ function renderHandPanel() {
     sumEl.innerHTML = '<span class="hand-empty-text">记录胡牌后预览</span>';
     return;
   }
-  const changes = handChanges(hand);
-  sumEl.innerHTML = changes.map((c, i) => {
+  const { after, poolAdd } = rakeInfo(hand);
+  sumEl.innerHTML = after.map((c, i) => {
     const cls = c > 0 ? 's-pos' : c < 0 ? 's-neg' : 's-zero';
     const sign = c > 0 ? '+' : '';
     return `<div class="hand-summary-row"><span>${esc(state.players[i])}</span><span class="${cls}">${sign}${fmt(c)}</span></div>`;
-  }).join('');
+  }).join('') + (poolAdd > 0
+    ? `<div class="hand-summary-row" style="border-top:1px solid #e5e5e5;margin-top:4px;padding-top:4px;"><span>🪙 抽水（进奖池）</span><span class="s-neg">-${fmt(poolAdd)}</span></div>`
+    : '');
 }
 
 // 本局合计：杠基础 + 胡牌基础 + 马结算（胡牌的马 + 每条杠的马）
@@ -1426,6 +1478,24 @@ function handChanges(hand) {
     for (let i = 0; i < 4; i++) deltas[i] += kongAfter[i] - kongBase[i];
   });
   return base.map((v, i) => +(v + deltas[i]).toFixed(2));
+}
+
+// 抽水：只扣赢家（正分）满足条件的——每满 rakeTh 抽 rakeRate，进共享奖池
+function rakeInfo(hand) {
+  const net = handChanges(hand);
+  const th = state.config.rakeTh, rate = state.config.rakeRate;
+  const rakes = [0, 0, 0, 0];
+  let poolAdd = 0;
+  if (th > 0 && rate > 0) {
+    for (let i = 0; i < 4; i++) {
+      if (net[i] > 0) {
+        rakes[i] = Math.floor(net[i] / th) * rate;
+        poolAdd += rakes[i];
+      }
+    }
+  }
+  const after = net.map((n, i) => +(n - rakes[i]).toFixed(2));
+  return { net, rakes, poolAdd, after };
 }
 
 function renderHandHorses() {
@@ -1801,6 +1871,9 @@ function copySettlement() {
     const sign = p.score > 0 ? '+' : '';
     text += `${i + 1}. ${p.name}：${sign}${fmt(p.score)}\n`;
   });
+  if (state.pool > 0) {
+    text += `\n🪙 共享奖池：${fmt(state.pool)} 分\n`;
+  }
 
   if (transfers.length > 0) {
     text += '\n💸 转账明细：\n';
@@ -1882,6 +1955,7 @@ function confirmNewGame() {
   if (confirm('确定要新开一局吗？当前数据将被清除。')) {
     state.scores = [0, 0, 0, 0];
     state.rounds = [];
+    state.pool = 0;
     state.currentHand = { kongs: [], wins: [], horses: [] };
     state.dealer = 0;
     state.gameStarted = true;
