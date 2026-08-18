@@ -356,6 +356,15 @@ body {
 .settlement-actions { display: grid; gap: 10px; }
 .settlement-actions .btn-primary { background: var(--table-green); }
 .settlement-actions .btn-secondary { margin-top: 0; }
+.update-bar {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 14px; padding-bottom: 4px;
+}
+.version-tag {
+  font-size: 11px; color: var(--text-sec); background: var(--card-bg);
+  padding: 4px 10px; border-radius: 10px; box-shadow: var(--shadow);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ===== Toast ===== */
 .toast {
@@ -489,6 +498,10 @@ body {
     <button class="btn-secondary" onclick="backToGame()">返回游戏</button>
     <button class="btn-secondary" onclick="confirmNewGame()">🔄 新开一局</button>
   </div>
+  <div class="update-bar">
+    <button class="link-btn" onclick="updateApp()">🔄 检查更新</button>
+    <span id="app-version" class="version-tag"></span>
+  </div>
 </div>
 
 <!-- ===== Win Modal ===== -->
@@ -604,6 +617,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
+const APP_VERSION = '1.5.0';
 
 const state = {
   players: ['东家', '南家', '西家', '北家'],
@@ -1866,6 +1880,18 @@ function copyText(text) {
   }
 }
 
+// 检查更新：触发 Service Worker 更新检查后强制重载，拉取线上最新版
+async function updateApp() {
+  showToast('正在检查更新…');
+  try {
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) await reg.update();
+    }
+  } catch (e) {}
+  location.reload();
+}
+
 function confirmNewGame() {
   if (confirm('确定要新开一局吗？当前数据将被清除。')) {
     state.scores = [0, 0, 0, 0];
@@ -1908,6 +1934,8 @@ function esc(s) {
 
 // ==================== Init ====================
 initSetup();
+const versionEl = document.getElementById('app-version');
+if (versionEl) versionEl.textContent = 'v' + APP_VERSION;
 </script>
 <script>
 // PWA 注册：离线可用 + 安装到主屏幕；网络优先，线上更新自动热更
