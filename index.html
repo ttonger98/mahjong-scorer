@@ -88,6 +88,14 @@ body {
 .player-inputs { display: grid; gap: 6px; }
 .player-input-row { display: flex; align-items: center; gap: 10px; }
 .player-color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.seat-tag {
+  flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--table-dark);
+  background: var(--table-light); padding: 6px 10px; border-radius: 8px; min-width: 52px; text-align: center;
+}
+.player-seat {
+  display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent);
+  background: var(--table-light); padding: 1px 6px; border-radius: 6px; margin-right: 5px;
+}
 .player-input-row input {
   flex: 1; padding: 9px 12px; border: 2px solid var(--border); border-radius: var(--radius-sm);
   font-size: 16px; background: var(--card-bg); transition: border-color 0.2s;
@@ -397,19 +405,23 @@ body {
   <div class="player-inputs" id="setup-players">
     <div class="player-input-row">
       <div class="player-color-dot" style="background:var(--p1)"></div>
-      <input type="text" id="setup-p0" placeholder="玩家1" value="东家" maxlength="6">
+      <span class="seat-tag">东家</span>
+      <input type="text" id="setup-p0" placeholder="姓名" maxlength="6">
     </div>
     <div class="player-input-row">
       <div class="player-color-dot" style="background:var(--p2)"></div>
-      <input type="text" id="setup-p1" placeholder="玩家2" value="南家" maxlength="6">
+      <span class="seat-tag">南家</span>
+      <input type="text" id="setup-p1" placeholder="姓名" maxlength="6">
     </div>
     <div class="player-input-row">
       <div class="player-color-dot" style="background:var(--p3)"></div>
-      <input type="text" id="setup-p2" placeholder="玩家3" value="西家" maxlength="6">
+      <span class="seat-tag">西家</span>
+      <input type="text" id="setup-p2" placeholder="姓名" maxlength="6">
     </div>
     <div class="player-input-row">
       <div class="player-color-dot" style="background:var(--p4)"></div>
-      <input type="text" id="setup-p3" placeholder="玩家4" value="北家" maxlength="6">
+      <span class="seat-tag">北家</span>
+      <input type="text" id="setup-p3" placeholder="姓名" maxlength="6">
     </div>
   </div>
 
@@ -635,6 +647,7 @@ body {
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
 const APP_VERSION = '1.5.0';
+const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
   players: ['东家', '南家', '西家', '北家'],
@@ -1005,12 +1018,13 @@ function renderScoreboard() {
     const cls = score > 0 ? 'score-pos' : score < 0 ? 'score-neg' : 'score-zero';
     const sign = score > 0 ? '+' : '';
     const rankCls = ranks[i] === 1 ? 'rank-1' : '';
+    const seatTag = name === SEATS[i] ? '' : `<span class="player-seat">${SEATS[i]}</span>`;
     const dealerBadge = i === state.dealer
       ? '<span style="position:absolute;bottom:10px;right:10px;font-size:11px;font-weight:700;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:10px;">庄</span>'
       : '';
     return `<div class="score-card" data-pi="${i}" onclick="setDealer(${i})" title="设 ${esc(name)} 为庄家">
       <div class="player-rank ${rankCls}">第${ranks[i]}</div>
-      <div class="player-name">${esc(name)}</div>
+      <div class="player-name">${seatTag}${esc(name)}</div>
       <div class="player-score ${cls}">${sign}${fmt(score)}</div>
       ${dealerBadge}
     </div>`;
@@ -1264,7 +1278,8 @@ function initSetup() {
 
   for (let i = 0; i < 4; i++) {
     const input = document.getElementById(`setup-p${i}`);
-    input.value = state.players[i];
+    input.value = state.players[i] === SEATS[i] ? '' : state.players[i];
+    input.placeholder = '姓名';
   }
 
   document.getElementById('btn-continue').classList.toggle('hidden', !hasSavedGame());
@@ -1280,7 +1295,7 @@ function readSetupConfig() {
   if (!Number.isFinite(state.config.rakeRate) || state.config.rakeRate < 0) state.config.rakeRate = 0;
   for (let i = 0; i < 4; i++) {
     const val = document.getElementById(`setup-p${i}`).value.trim();
-    state.players[i] = val || `玩家${i + 1}`;
+    state.players[i] = val || SEATS[i];
   }
 }
 
