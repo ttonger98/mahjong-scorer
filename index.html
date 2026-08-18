@@ -268,6 +268,10 @@ body {
   padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px;
   font-size: 13px; background: #fff;
 }
+.ced-confirmed {
+  font-size: 11px; color: var(--brand); background: var(--brand-w);
+  padding: 4px 8px; border-radius: 8px; font-weight: 600; white-space: nowrap;
+}
 .ced-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 
 /* 马匹计数 */
@@ -769,7 +773,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.7';
+const APP_VERSION = '1.9.8';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -1578,21 +1582,21 @@ function backFromConfig() {
 function renderConfigList() {
   const list = document.getElementById('config-list');
   if (!list) return;
-  let html = `<div class="session-item" style="cursor:default;">
+  let html = `<div class="session-item" onclick="openConfigEditor('new')">
     <div class="session-item-main">
       <div class="session-name">📄 默认配置</div>
       <div class="session-players">${configSummary(DEFAULT_CONFIG)}</div>
     </div>
-    <button class="mini-btn" onclick="openConfigEditor('new')">以此新建</button>
+    <span class="session-arrow">›</span>
   </div>`;
   state.configs.forEach(cfg => {
-    html += `<div class="session-item" style="cursor:default;">
+    html += `<div class="session-item" onclick="openConfigEditor('${cfg.id}')">
       <div class="session-item-main">
         <div class="session-name">${esc(cfg.name)}</div>
         <div class="session-players">${configSummary(cfg)}</div>
       </div>
-      <button class="mini-btn" onclick="openConfigEditor('${cfg.id}')">编辑</button>
-      <button class="session-del" onclick="deleteConfig('${cfg.id}')" title="删除这套配置">🗑</button>
+      <button class="session-del-btn" onclick="event.stopPropagation();deleteConfig('${cfg.id}')" title="删除这套配置">🗑</button>
+      <span class="session-arrow">›</span>
     </div>`;
   });
   list.innerHTML = html;
@@ -1607,7 +1611,7 @@ function cloneConfig(cfg) {
     horseKong: cfg.horseKong !== false,
     maxMult: cfg.maxMult,
     types: Object.assign({}, cfg.types || {}),
-    customTypes: (cfg.customTypes || []).map(t => ({ id: t.id, name: t.name, mult: t.mult })),
+    customTypes: (cfg.customTypes || []).map(t => ({ id: t.id, name: t.name, mult: t.mult, confirmed: true })),
   };
 }
 
@@ -1642,18 +1646,75 @@ function setCedHorseKong(v) {
 }
 
 function addCustomTypeRow() {
-  editingConfig.customTypes.push({ id: 'ct' + Date.now() + Math.floor(Math.random() * 1000), name: '', mult: 1 });
-  renderConfigEditor();
+  syncCedInputs();
+  editingConfig.customTypes.push({ id: 'ct' + Date.now() + Math.floor(Math.random() * 1000), name: '', mult: 1, confirmed: false });
+  renderCedTypes();
+  const box = document.querySelector('#config-editor-modal .ced-types');
+  if (box) box.scrollTop = box.scrollHeight;
 }
 
 function removeCustomTypeRow(i) {
+  syncCedInputs();
   editingConfig.customTypes.splice(i, 1);
-  renderConfigEditor();
+  renderCedTypes();
+  showToast('已删除');
+}
+
+function confirmCustomType(i) {
+  syncCedInputs();
+  if (!editingConfig.customTypes[i]) return;
+  editingConfig.customTypes[i].confirmed = true;
+  renderCedTypes();
+  showToast('添加成功');
 }
 
 function resetTypeMults() {
+  syncCedInputs();
   editingConfig.types = {};
-  renderConfigEditor();
+  renderCedTypes();
+}
+
+function cedTypeRowsHtml(cfg) {
+  const rows = HAND_TYPES.map(t => {
+    const over = (cfg.types || {})[t.id];
+    const val = over != null ? over : t.mult;
+    return `<div class="ced-type-row"><span>${esc(t.name)}</span><input type="number" class="ced-type-mult" data-id="${t.id}" value="${val}" min="0" step="0.5"></div>`;
+  }).join('');
+  const customs = (cfg.customTypes || []).map((t, i) =>
+    `<div class="ced-type-row"><input type="text" class="ced-custom-name" data-i="${i}" value="${esc(t.name)}" placeholder="牌型名" maxlength="8" style="flex:1;min-width:0;"><input type="number" class="ced-custom-mult" data-i="${i}" value="${t.mult}" min="0" step="0.5" style="width:62px;">${t.confirmed ? '<span class="ced-confirmed">✓ 已添加</span>' : `<button class="mini-btn" onclick="confirmCustomType(${i})">✓ 确认</button>`}<button class="session-del" onclick="removeCustomTypeRow(${i})">🗑</button></div>`
+  ).join('');
+  return rows + customs;
+}
+
+function syncCedInputs() {
+  if (!editingConfig) return;
+  const cfg = editingConfig;
+  const nameEl = document.getElementById('ced-name');
+  if (nameEl) cfg.name = nameEl.value;
+  const rn = (id) => { const el = document.getElementById(id); const v = parseFloat(el ? el.value : '0'); return Number.isFinite(v) ? v : 0; };
+  cfg.kongAn = rn('ced-kong-an');
+  cfg.kongMing = rn('ced-kong-ming');
+  cfg.kongJia = rn('ced-kong-jia');
+  cfg.maxMult = rn('ced-max-mult');
+  document.querySelectorAll('.ced-type-mult').forEach(inp => {
+    const v = parseFloat(inp.value);
+    cfg.types[inp.dataset.id] = Number.isFinite(v) && v > 0 ? v : 1;
+  });
+  document.querySelectorAll('.ced-custom-name').forEach(inp => {
+    const i = +inp.dataset.i;
+    if (cfg.customTypes[i]) cfg.customTypes[i].name = inp.value;
+  });
+  document.querySelectorAll('.ced-custom-mult').forEach(inp => {
+    const i = +inp.dataset.i;
+    const v = parseFloat(inp.value);
+    if (cfg.customTypes[i]) cfg.customTypes[i].mult = Number.isFinite(v) && v > 0 ? v : 1;
+  });
+}
+
+function renderCedTypes() {
+  const box = document.querySelector('#config-editor-modal .ced-types');
+  if (!box || !editingConfig) return;
+  box.innerHTML = cedTypeRowsHtml(editingConfig);
 }
 
 function renderConfigEditor() {
@@ -1661,14 +1722,6 @@ function renderConfigEditor() {
   if (!body || !editingConfig) return;
   const cfg = editingConfig;
   document.getElementById('config-editor-title').textContent = cfg.id === 'new' ? '新建配置' : '编辑配置';
-  const rows = HAND_TYPES.map(t => {
-    const over = (cfg.types || {})[t.id];
-    const val = over != null ? over : t.mult;
-    return `<div class="ced-type-row"><span>${esc(t.name)}</span><input type="number" class="ced-type-mult" data-id="${t.id}" value="${val}" min="0" step="0.5"></div>`;
-  }).join('');
-  const customs = (cfg.customTypes || []).map((t, i) =>
-    `<div class="ced-type-row"><input type="text" class="ced-custom-name" data-i="${i}" value="${esc(t.name)}" placeholder="牌型名" maxlength="8" style="flex:1;min-width:0;"><input type="number" class="ced-custom-mult" data-i="${i}" value="${t.mult}" min="0" step="0.5" style="width:62px;"><button class="session-del" onclick="removeCustomTypeRow(${i})">🗑</button></div>`
-  ).join('');
   body.innerHTML = `
     <div class="modal-section">
       <div class="modal-section-label">配置名称</div>
@@ -1695,7 +1748,7 @@ function renderConfigEditor() {
     </div>
     <div class="modal-section">
       <div class="modal-section-label">牌型倍数（可直接改，支持自定义）</div>
-      <div class="ced-types">${rows}${customs}</div>
+      <div class="ced-types">${cedTypeRowsHtml(cfg)}</div>
       <div class="ced-actions">
         <button class="mini-btn" onclick="addCustomTypeRow()">＋ 添加自定义牌型</button>
         <button class="mini-btn" onclick="resetTypeMults()">恢复默认倍数</button>
@@ -1705,28 +1758,11 @@ function renderConfigEditor() {
 
 function saveConfig() {
   if (!editingConfig) return;
+  syncCedInputs();
   const cfg = editingConfig;
-  cfg.name = document.getElementById('ced-name').value.trim() || `配置${state.configs.length + 1}`;
-  cfg.kongAn = parseFloat(document.getElementById('ced-kong-an').value) || 0;
-  cfg.kongMing = parseFloat(document.getElementById('ced-kong-ming').value) || 0;
-  cfg.kongJia = parseFloat(document.getElementById('ced-kong-jia').value) || 0;
-  cfg.maxMult = parseFloat(document.getElementById('ced-max-mult').value);
+  cfg.name = cfg.name.trim() || `配置${state.configs.length + 1}`;
   if (!Number.isFinite(cfg.maxMult) || cfg.maxMult < 0) cfg.maxMult = 0;
-  document.querySelectorAll('.ced-type-mult').forEach(inp => {
-    const v = parseFloat(inp.value);
-    cfg.types[inp.dataset.id] = Number.isFinite(v) && v > 0 ? v : 1;
-  });
-  document.querySelectorAll('.ced-custom-name').forEach(inp => {
-    const i = +inp.dataset.i;
-    const n = inp.value.trim();
-    if (cfg.customTypes[i]) cfg.customTypes[i].name = n;
-  });
-  document.querySelectorAll('.ced-custom-mult').forEach(inp => {
-    const i = +inp.dataset.i;
-    const v = parseFloat(inp.value);
-    if (cfg.customTypes[i]) cfg.customTypes[i].mult = Number.isFinite(v) && v > 0 ? v : 1;
-  });
-  cfg.customTypes = cfg.customTypes.filter(t => t.name);
+  cfg.customTypes = cfg.customTypes.filter(t => (t.name || '').trim());
   if (cfg.id === 'new') {
     cfg.id = 'c' + Date.now();
     state.configs.push(cloneConfig(cfg));
