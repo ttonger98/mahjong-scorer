@@ -516,6 +516,7 @@ body {
     </div>
 
     <button class="btn-primary" onclick="settleHand()" style="margin-top:2px;">💰 结算本局</button>
+    <button class="btn-secondary" onclick="endSessionFromGame()" style="margin-top:8px;">🕐 今日盘结束</button>
 
     <div class="hand-bottom">
       <button class="link-btn" onclick="clearHand()">清空本局</button>
@@ -683,7 +684,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.8.1';
+const APP_VERSION = '1.8.2';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -2227,6 +2228,28 @@ function newSessionFromStats() {
     showScreen('setup');
     initSetup();
     showToast('已存盘，请设置新的一盘');
+  }
+}
+
+function endSessionFromGame() {
+  const name = state.sessionName || '本盘';
+  const hasData = state.rounds.length > 0 || currentHandHasContent();
+  if (!hasData) {
+    if (!confirm(`这盘还没有任何对局记录，确定直接结束吗？`)) return;
+    state.gameStarted = false;
+    saveState();
+    showScreen('setup');
+    initSetup();
+    showToast('已结束');
+    return;
+  }
+  if (confirm(`确定结束「${name}」这盘吗？结果会存入“过往盘”，可在统计表按日期查看。`)) {
+    archiveCurrentSession();
+    state.gameStarted = false;
+    saveState();
+    showScreen('setup');
+    initSetup();
+    showToast('本盘已结束并存档');
   }
 }
 
