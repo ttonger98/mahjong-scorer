@@ -1319,22 +1319,24 @@ function renderChart() {
 
   const maxRounds = data.length;
   const allValues = data.flat();
-  const maxVal = Math.max(...allValues, 1);
-  const minVal = Math.min(...allValues, -1);
+  const rawMax = Math.max(...allValues, 1);
+  const rawMin = Math.min(...allValues, -1);
+
+  // 友好 Y 轴：步长取 2/5/10/20
+  const span = rawMax - rawMin;
+  const step = span > 60 ? 20 : span > 30 ? 10 : span > 12 ? 5 : 2;
+  const yMax = Math.ceil(rawMax / step) * step;
+  const yMin = Math.floor(rawMin / step) * step;
 
   const W = 420, H = 200, padL = 36, padR = 12, padT = 12, padB = 24;
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
   const xStep = maxRounds > 1 ? plotW / (maxRounds - 1) : 0;
 
-  const yMax = Math.ceil(maxVal);
-  const yMin = Math.floor(minVal);
   const yTicks = [];
-  const tickCount = 4;
-  for (let i = 0; i <= tickCount; i++) {
-    const val = yMin + (yMax - yMin) * i / tickCount;
-    const y = padT + plotH - ((val - yMin) / (yMax - yMin)) * plotH;
-    yTicks.push(`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#f0f0f0" stroke-width="1"/><text x="${padL-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#999">${Math.round(val)}</text>`);
+  for (let v = yMin; v <= yMax; v += step) {
+    const y = padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+    yTicks.push(`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#f0f0f0" stroke-width="1"/><text x="${padL-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#999">${v}</text>`);
   }
 
   const zeroY = padT + plotH - ((0 - yMin) / (yMax - yMin)) * plotH;
@@ -1348,17 +1350,27 @@ function renderChart() {
     return `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
   }).join('');
 
+  const dots = colors.map((color, pi) => {
+    return data.map((d, ri) => {
+      const x = padL + ri * xStep;
+      const y = padT + plotH - ((d[pi] - yMin) / (yMax - yMin)) * plotH;
+      return `<circle cx="${x}" cy="${y}" r="2.5" fill="${color}"/>`;
+    }).join('');
+  }).join('');
+
   const xLabels = [];
-  const xLabelStep = Math.ceil(maxRounds / 6);
-  for (let i = 0; i < maxRounds; i += xLabelStep) {
+  const labelStep = Math.max(1, Math.ceil(maxRounds / 6));
+  for (let i = 0; i < maxRounds; i += labelStep) {
     const x = padL + i * xStep;
-    xLabels.push(`<text x="${x}" y="${H-6}" text-anchor="middle" font-size="10" fill="#999">${i}</text>`);
+    const label = i === 0 ? '开局' : `第${i}局`;
+    xLabels.push(`<text x="${x}" y="${H-6}" text-anchor="middle" font-size="9" fill="#999">${label}</text>`);
   }
 
   container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;">
     ${yTicks.join('')}
     <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="#ddd" stroke-width="1" stroke-dasharray="3,3"/>
     ${lines}
+    ${dots}
     ${xLabels.join('')}
   </svg>`;
 
