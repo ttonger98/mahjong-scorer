@@ -140,6 +140,8 @@ body {
 }
 .btn-secondary:active { transform: scale(.98); background: #F7F8F5; }
 .btn-secondary.hidden { display: none; }
+.settle-row { display: flex; gap: 10px; margin-top: 2px; }
+.settle-row .btn-primary, .settle-row .btn-secondary { flex: 1; margin-top: 0; }
 
 /* ===== 对局页 ===== */
 .game-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 0 14px; }
@@ -666,12 +668,14 @@ body {
       <div id="hand-summary-content"><span class="hand-empty-text">记录胡牌后预览</span></div>
     </div>
 
-    <button class="btn-primary" onclick="settleHand()" style="margin-top:2px;">💰 结算本局</button>
+    <div class="settle-row">
+      <button class="btn-primary" onclick="settleHand()">💰 结算本局</button>
+      <button class="btn-secondary" onclick="drawHand()">🀄 流局</button>
+    </div>
     <button class="btn-secondary" onclick="endSessionFromGame()" style="margin-top:8px;">🕐 今日盘结束</button>
 
     <div class="hand-bottom">
       <button class="link-btn" onclick="clearHand()">清空本局</button>
-      <button class="link-btn" id="btn-undo" onclick="undoLastHand()" disabled>撤销上一局</button>
     </div>
   </div>
 
@@ -904,7 +908,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.17';
+const APP_VERSION = '1.9.18';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -1666,6 +1670,16 @@ function renderHandDetails() {
     return;
   }
   wrap.innerHTML = ctx.rounds.map((r, i) => {
+    if (r.type === 'draw') {
+      return `<div class="hand-detail-card" onclick="openHandDetail(${i})">
+        <div class="hdr-head">
+          <span class="hdr-round">第 ${i + 1} 局</span>
+          <span class="hdr-pool">🀄 流局</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-sec);padding:4px 0;">本局无输赢</div>
+        <div class="hdr-hint">点此查看详情 ›</div>
+      </div>`;
+    }
     const rows = ctx.players.map((name, pi) => {
       const net = r.changes[pi];
       const rake = (r.rakes && r.rakes[pi]) || 0;
@@ -1717,6 +1731,9 @@ function openHandDetail(i) {
     </tr>`;
   });
   html += `</tbody></table>`;
+  if (r.type === 'draw') {
+    html += `<div class="hdt-horse">🀄 流局（本局不计输赢）</div>`;
+  }
 
   const horseHits = horseHitsText(handHorses);
   if (horseHits) {
@@ -2149,7 +2166,6 @@ function renderGame() {
   renderScoreboard();
   renderHandPanel();
   renderGameRecords();
-  document.getElementById('btn-undo').disabled = state.rounds.length === 0;
 }
 
 function setDealer(i) {
@@ -2174,16 +2190,19 @@ function settleHand() {
   showToast(poolAdd > 0 ? `第 ${state.rounds.length} 局已结算（抽水 ${fmt(poolAdd)} 进奖池）` : `第 ${state.rounds.length} 局已结算`);
 }
 
-function undoLastHand() {
-  if (state.rounds.length === 0) return;
-  const last = state.rounds.pop();
-  if (last.changes) {
-    state.scores = state.scores.map((s, i) => +(s - last.changes[i]).toFixed(2));
+function drawHand() {
+  if (currentHandHasContent()) {
+    if (!confirm('本局已录入杠/胡牌/马，点“流局”将清空这些记录，确定吗？')) return;
   }
-  if (typeof last.dealerBefore === 'number') state.dealer = last.dealerBefore;
+  state.rounds.push({
+    type: 'draw', wins: [], kongs: [], horses: [],
+    changes: [0, 0, 0, 0], rakes: [0, 0, 0, 0], poolAdd: 0,
+    dealerAt: state.dealer,
+  });
+  state.currentHand = { kongs: [], wins: [], horses: [] };
   saveState();
   renderGame();
-  showToast('已撤销上一局');
+  showToast(`第 ${state.rounds.length} 局流局（不计输赢）`);
 }
 
 function clearHand() {
@@ -2213,6 +2232,9 @@ function renderGameRecords() {
     return;
   }
   body.innerHTML = state.rounds.map((r, i) => {
+    if (r.type === 'draw') {
+      return `<div class="game-record-row"><span class="gr-num">第 ${i + 1} 局</span><span>流局（不计输赢）</span></div>`;
+    }
     const kongs = Array.isArray(r.kongs) ? r.kongs : [];
     const handHorses = Array.isArray(r.horses) ? r.horses : [];
     const wins = Array.isArray(r.wins) ? r.wins : (r.winner ? [r] : []);
@@ -2833,6 +2855,10 @@ function copySettlement() {
   if (ctx.rounds.length > 0) {
     text += '\n📋 对局明细：\n';
     ctx.rounds.forEach((r, i) => {
+      if (r.type === 'draw') {
+        text += `${i + 1}. 流局（不计输赢）\n`;
+        return;
+      }
       const kongs = Array.isArray(r.kongs) ? r.kongs : [];
       const handHorses = Array.isArray(r.horses) ? r.horses : [];
       const wins = Array.isArray(r.wins) ? r.wins : (r.winner ? [r] : []);
