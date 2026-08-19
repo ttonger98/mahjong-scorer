@@ -270,6 +270,23 @@ body {
 .game-record-row:last-child { border-bottom: none; padding-bottom: 2px; }
 .game-record-row .gr-num { flex-shrink: 0; font-weight: 700; color: var(--brand); background: var(--brand-w); border-radius: 8px; padding: 2px 7px; font-size: 11px; }
 
+/* 对局明细：规整表格 */
+.round-card { background: var(--bg); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.rt-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+.rt-round { font-size: 13px; font-weight: 800; color: var(--ink); }
+.rt-pool { font-size: 11px; font-weight: 600; color: #A97B14; }
+.rt-draw { font-size: 12px; color: var(--ink2); padding: 4px 0 2px; }
+.rt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.rt-table th { text-align: left; font-size: 11px; color: var(--ink3); font-weight: 600; padding: 3px 4px 6px; border-bottom: 1px solid var(--line); }
+.rt-table th:last-child, .rt-table td:last-child { text-align: right; }
+.rt-table td { padding: 7px 4px; border-bottom: 1px solid #EDEFEA; vertical-align: middle; }
+.rt-table tr:last-child td { border-bottom: none; }
+.rt-player { display: flex; align-items: center; gap: 6px; }
+.rt-name { max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rt-net { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rt-rake { display: block; font-size: 10px; font-weight: 600; color: var(--ink2); }
+.rt-horse { font-size: 11px; color: var(--ink2); margin-top: 6px; line-height: 1.55; }
+
 .score-pos { color: var(--win); }
 .score-neg { color: var(--loss); }
 .score-zero { color: var(--zero); }
@@ -908,7 +925,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.18';
+const APP_VERSION = '1.9.19';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -1669,38 +1686,9 @@ function renderHandDetails() {
     wrap.innerHTML = '<div style="font-size:12px;color:var(--text-sec);padding:6px 0;">暂无对局</div>';
     return;
   }
-  wrap.innerHTML = ctx.rounds.map((r, i) => {
-    if (r.type === 'draw') {
-      return `<div class="hand-detail-card" onclick="openHandDetail(${i})">
-        <div class="hdr-head">
-          <span class="hdr-round">第 ${i + 1} 局</span>
-          <span class="hdr-pool">🀄 流局</span>
-        </div>
-        <div style="font-size:12px;color:var(--text-sec);padding:4px 0;">本局无输赢</div>
-        <div class="hdr-hint">点此查看详情 ›</div>
-      </div>`;
-    }
-    const rows = ctx.players.map((name, pi) => {
-      const net = r.changes[pi];
-      const rake = (r.rakes && r.rakes[pi]) || 0;
-      const cls = net > 0 ? 'd-pos' : net < 0 ? 'd-neg' : 'd-zero';
-      const sign = net > 0 ? '+' : '';
-      return `<div class="hdr-row">
-        <span class="hdr-avatar" style="background:var(--p${pi + 1})">${esc(name.charAt(0))}</span>
-        <span class="hdr-name">${esc(name)}</span>
-        <span class="hdr-net ${cls}">${sign}${fmt(net)}</span>
-        <span class="hdr-rake">${rake > 0 ? '抽' + fmt(rake) : ''}</span>
-      </div>`;
-    }).join('');
-    return `<div class="hand-detail-card" onclick="openHandDetail(${i})">
-      <div class="hdr-head">
-        <span class="hdr-round">第 ${i + 1} 局</span>
-        <span class="hdr-pool">🪙 抽水 ${fmt(r.poolAdd || 0)}</span>
-      </div>
-      ${rows}
-      <div class="hdr-hint">点此查看详情 ›</div>
-    </div>`;
-  }).join('');
+  wrap.innerHTML = ctx.rounds.map((r, i) =>
+    `<div class="hand-detail-card" onclick="openHandDetail(${i})">${roundTableHtml(r, ctx.players, i)}<div class="hdr-hint">点此查看详情 ›</div></div>`
+  ).join('');
 }
 
 function openHandDetail(i) {
@@ -2231,37 +2219,42 @@ function renderGameRecords() {
     body.innerHTML = '<div class="hand-empty-text" style="padding:8px 0;">本盘还没有结算的对局</div>';
     return;
   }
-  body.innerHTML = state.rounds.map((r, i) => {
-    if (r.type === 'draw') {
-      return `<div class="game-record-row"><span class="gr-num">第 ${i + 1} 局</span><span>流局（不计输赢）</span></div>`;
-    }
-    const kongs = Array.isArray(r.kongs) ? r.kongs : [];
-    const handHorses = Array.isArray(r.horses) ? r.horses : [];
-    const wins = Array.isArray(r.wins) ? r.wins : (r.winner ? [r] : []);
-    let text = '';
-    if (kongs.length > 0) {
-      text += kongs.map(k => {
-        let d = kongEntryDesc(k);
-        if (handHorses.length > 0) {
-          const notes = kongHorseNotesText(k.maker, k.kongType, k.discarder, handHorses, k.dealerAt);
-          if (notes.length > 0) d += '　' + notes.join('；');
-        }
-        return d;
-      }).join('；') + '；';
-    }
-    text += wins.map(w => {
-      let d = winEntryText(w);
-      const hd = winHorseDesc(w, handHorses);
-      if (hd) d += '　' + hd;
-      return d;
-    }).join('；');
-    if (r.poolAdd > 0) text += `　（抽水 ${fmt(r.poolAdd)} 分进奖池）`;
-    return `<div class="game-record-row"><span class="gr-num">第 ${i + 1} 局</span><span>${text}</span></div>`;
-  }).join('');
+  body.innerHTML = state.rounds.map((r, i) => `<div class="round-card">${roundTableHtml(r, state.players, i)}</div>`).join('');
 }
 
 function openFinalSettlement() {
   viewSession('current', 'game');
+}
+
+function roundTableHtml(r, players, i) {
+  const wins = Array.isArray(r.wins) ? r.wins : (r.winner ? [r] : []);
+  const kongs = Array.isArray(r.kongs) ? r.kongs : [];
+  const handHorses = Array.isArray(r.horses) ? r.horses : [];
+  const head = `<div class="rt-head"><span class="rt-round">第 ${i + 1} 局</span>${r.type === 'draw' ? '<span class="rt-pool">🀄 流局</span>' : (r.poolAdd > 0 ? `<span class="rt-pool">💧 抽水 ${fmt(r.poolAdd)}</span>` : '')}</div>`;
+  if (r.type === 'draw') {
+    return head + '<div class="rt-draw">本局不计输赢</div>';
+  }
+  const rows = players.map((name, pi) => {
+    const net = r.changes[pi];
+    const rake = (r.rakes && r.rakes[pi]) || 0;
+    const cls = net > 0 ? 'd-pos' : net < 0 ? 'd-neg' : 'd-zero';
+    const sign = net > 0 ? '+' : '';
+    const kongTexts = kongs.filter(k => k.maker === pi).map(k => kongTypeText(k)).join('、') || '—';
+    const winTexts = wins.filter(w => w.winner === pi).map(w => {
+      const base = w.winType === 'zimo' ? '自摸' : w.winType === 'chihu' ? '吃胡' : w.winType === 'qianggang' ? '抢杠' : '杠爆';
+      return base + (w.mult > 1 ? ` ×${fmt(w.mult)}` : '');
+    }).join('、') || '—';
+    const netCell = `${sign}${fmt(net)}${rake > 0 ? `<span class="rt-rake">抽${fmt(rake)}</span>` : ''}`;
+    return `<tr><td><span class="rt-player"><span class="hdr-avatar" style="background:var(--p${pi + 1})">${esc(name.charAt(0))}</span><span class="rt-name">${esc(name)}</span></span></td><td>${kongTexts}</td><td>${winTexts}</td><td class="rt-net ${cls}">${netCell}</td></tr>`;
+  }).join('');
+  let horse = '';
+  if (handHorses.length > 0) {
+    const winHorse = wins.map(w => winHorseDesc(w, handHorses)).filter(Boolean).join('；');
+    const kongHorse = kongs.map(k => kongHorseNotesText(k.maker, k.kongType, k.discarder, handHorses, k.dealerAt).join('；')).filter(Boolean).join('；');
+    const combined = [winHorse, kongHorse].filter(Boolean).join('；');
+    if (combined) horse = `<div class="rt-horse">🐴 ${combined}</div>`;
+  }
+  return head + `<table class="rt-table"><thead><tr><th>玩家</th><th>杠</th><th>胡牌</th><th>输赢</th></tr></thead><tbody>${rows}</tbody></table>` + horse;
 }
 
 // ===== 本局牌况 =====
