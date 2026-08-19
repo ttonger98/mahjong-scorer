@@ -140,26 +140,57 @@ body {
 }
 .icon-btn:active { transform: scale(.92); }
 
-.scoreboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-.score-card {
-  background: var(--card); border-radius: 16px; padding: 14px 14px 12px;
-  box-shadow: var(--shadow); position: relative; overflow: hidden;
-  transition: all .25s; cursor: pointer; border: 1px solid rgba(0,0,0,.03);
+/* 庄家选择：一行四个玩家卡片 */
+.dealer-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+.dealer-card {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 10px 2px 9px;
+  box-shadow: var(--shadow); cursor: pointer; transition: all .2s;
 }
-.score-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
-.score-card[data-pi="0"]::before { background: var(--p1); }
-.score-card[data-pi="1"]::before { background: var(--p2); }
-.score-card[data-pi="2"]::before { background: var(--p3); }
-.score-card[data-pi="3"]::before { background: var(--p4); }
-.score-card .player-name { font-size: 13px; font-weight: 600; color: var(--ink2); }
-.score-card .player-score { font-size: 30px; font-weight: 800; margin-top: 5px; font-variant-numeric: tabular-nums; letter-spacing: .3px; }
-.score-card .player-rank {
-  position: absolute; top: 10px; right: 10px; font-size: 11px; font-weight: 700;
-  background: var(--bg); padding: 3px 9px; border-radius: 10px; color: var(--ink2);
+.dealer-card .dealer-avatar {
+  width: 34px; height: 34px; border-radius: 50%; color: #fff; font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.score-card .player-rank.rank-1 { background: #FFF4CE; color: #9A5B00; }
-.score-card .player-rank.rank-2 { background: #F1F2F0; color: #5C6670; }
-.score-card .player-rank.rank-3 { background: #FBEEDF; color: #A85E00; }
+.dealer-card .dealer-name {
+  font-size: 12px; font-weight: 600; color: var(--ink);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px;
+}
+.dealer-card .dealer-badge {
+  position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; border-radius: 50%;
+  background: #F5B73D; color: #5A3E00; font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.18);
+}
+.dealer-card.is-dealer {
+  background: var(--brand); border-color: var(--brand);
+  box-shadow: 0 6px 16px rgba(46,107,80,.32);
+}
+.dealer-card.is-dealer .dealer-name { color: #fff; }
+.dealer-card.is-dealer .dealer-avatar { box-shadow: 0 0 0 2px rgba(255,255,255,.55); }
+.dealer-card:active { transform: scale(.96); }
+
+/* 顶部抽水池 chip */
+.pool-chip {
+  display: flex; align-items: center; gap: 4px; border: 1px solid #F0E4BC; background: #FBF3DC; color: #A97B14;
+  font-size: 12px; font-weight: 700; border-radius: 10px; padding: 7px 10px; white-space: nowrap;
+  font-variant-numeric: tabular-nums; align-self: center;
+}
+
+/* 首页右上角胶囊按钮 */
+.chip-btn {
+  display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 18px;
+  background: var(--card); color: var(--ink); font-size: 13px; font-weight: 600; padding: 8px 14px;
+  cursor: pointer; box-shadow: var(--shadow); transition: all .18s; white-space: nowrap;
+}
+.chip-btn:active { transform: scale(.96); }
+.chip-btn.small { font-size: 12px; color: var(--ink2); padding: 6px 12px; }
+
+/* 规则说明（杠）展示框 */
+.cfg-rule-box {
+  font-size: 13px; font-weight: 700; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; text-align: right;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.cfg-rule-box .sub { display: block; font-size: 11px; font-weight: 500; color: var(--ink2); margin-top: 1px; }
 
 /* 本局牌况 */
 .hand-panel {
@@ -204,6 +235,26 @@ body {
 .link-btn { border: none; background: none; color: var(--ink2); font-size: 13px; cursor: pointer; padding: 10px 4px; }
 .link-btn:disabled { opacity: .4; cursor: default; }
 
+/* 本盘对局记录（可折叠） */
+.game-records {
+  background: var(--card); border-radius: 18px; padding: 12px 14px;
+  box-shadow: var(--shadow); border: 1px solid rgba(0,0,0,.03); margin-top: 14px;
+}
+.game-records-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.game-records-toggle {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; background: none; border: none; cursor: pointer;
+  font-size: 14px; font-weight: 700; color: var(--ink); padding: 4px 0; text-align: left;
+}
+.game-records-count { font-size: 12px; font-weight: 600; color: var(--ink2); background: var(--bg); border-radius: 10px; padding: 2px 8px; flex-shrink: 0; }
+.game-records-chev { color: var(--ink2); font-size: 12px; flex-shrink: 0; }
+.game-records-body { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
+.game-record-row {
+  display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; border-bottom: 1px solid #EEF0EB;
+  font-size: 12px; color: var(--ink2); line-height: 1.55;
+}
+.game-record-row:last-child { border-bottom: none; padding-bottom: 2px; }
+.game-record-row .gr-num { flex-shrink: 0; font-weight: 700; color: var(--brand); background: var(--brand-w); border-radius: 8px; padding: 2px 7px; font-size: 11px; }
+
 .score-pos { color: var(--win); }
 .score-neg { color: var(--loss); }
 .score-zero { color: var(--zero); }
@@ -229,7 +280,7 @@ body {
 .player-select-btn {
   padding: 14px; border: 1px solid var(--line); border-radius: 12px;
   background: var(--card); font-size: 15px; font-weight: 600; cursor: pointer;
-  transition: all .18s; position: relative; text-align: center;
+  transition: all .18s; position: relative; text-align: center; overflow: hidden;
 }
 .player-select-btn::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; border-radius: 2px 2px 0 0; }
 .player-select-btn[data-pi="0"]::before { background: var(--p1); }
@@ -456,11 +507,12 @@ body {
 
 <!-- ===== Setup Screen ===== -->
 <div id="setup-screen" class="screen active">
-  <div style="position:relative;height:0;">
-    <button onclick="showConfigScreen()" title="配置管理"
-      style="position:absolute;top:0;right:0;z-index:5;display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);font-size:13px;font-weight:600;padding:8px 14px;cursor:pointer;box-shadow:var(--shadow);">🛠️ 详细配置</button>
-    <button onclick="showDebugScreen()" title="调试"
-      style="position:absolute;top:46px;right:0;z-index:5;display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink2);font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;box-shadow:var(--shadow);">🧪 调试</button>
+  <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:2px 0 0;">
+    <button class="chip-btn" onclick="showSettlement('setup')" title="统计表">📊 统计表</button>
+    <button class="chip-btn" onclick="showConfigScreen()" title="配置管理">🛠️ 详细配置</button>
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+    <button class="chip-btn small" onclick="showDebugScreen()" title="调试">🧪 调试</button>
   </div>
   <div class="setup-header">
     <div class="logo">🀄</div>
@@ -538,16 +590,16 @@ body {
       <div class="round-info" id="round-info">第 1 局</div>
     </div>
     <div class="header-actions">
-      <button class="icon-btn" onclick="showSettlement()" title="统计表">📊</button>
+      <div class="pool-chip" id="game-pool-chip" title="本盘总抽水">🪙 <span id="game-pool-val">0</span> 分</div>
+      <button class="icon-btn" onclick="showSettlement('game')" title="统计表">📊</button>
     </div>
   </div>
 
-  <div class="scoreboard" id="scoreboard"></div>
+  <div class="dealer-cards" id="scoreboard"></div>
   <div style="font-size:11px;color:var(--text-sec);text-align:center;margin:-2px 0 12px;">👆 点玩家卡片可直接换庄</div>
 
   <div class="hand-panel">
     <div class="hand-panel-title">🀄 本局牌况</div>
-    <div class="hand-pool-tip" id="hand-pool-tip">🪙 本盘总抽水：0 分</div>
 
     <div class="hand-section" id="horse-section">
       <div class="hand-section-head">
@@ -585,6 +637,18 @@ body {
       <button class="link-btn" onclick="clearHand()">清空本局</button>
       <button class="link-btn" id="btn-undo" onclick="undoLastHand()" disabled>撤销上一局</button>
     </div>
+  </div>
+
+  <div class="game-records">
+    <div class="game-records-head">
+      <button class="game-records-toggle" onclick="toggleGameRecords()">
+        <span>📋 本盘对局</span>
+        <span class="game-records-count" id="game-records-count"></span>
+        <span class="game-records-chev" id="game-records-chev">▾</span>
+      </button>
+      <button class="mini-btn" onclick="openFinalSettlement()">📊 最终结算</button>
+    </div>
+    <div class="game-records-body" id="game-records-body"></div>
   </div>
 </div>
 
@@ -756,8 +820,8 @@ body {
       <div class="modal-section-label">杠的类型</div>
       <div class="toggle-group" id="kong-type" style="display:flex;">
         <button class="toggle-btn active" data-val="an" style="flex:1;">暗杠</button>
-        <button class="toggle-btn" data-val="ming" style="flex:1;">明杠</button>
-        <button class="toggle-btn" data-val="jia" style="flex:1;">加杠</button>
+        <button class="toggle-btn" data-val="ming" style="flex:1;">放杠</button>
+        <button class="toggle-btn" data-val="jia" style="flex:1;">明杠</button>
       </div>
       <div style="font-size:12px;color:var(--text-sec);margin-top:6px;" id="kong-pay-hint"></div>
     </div>
@@ -768,7 +832,7 @@ body {
     </div>
 
     <div class="modal-section" id="kong-discarder-section" style="display:none;">
-      <div class="modal-section-label">点杠人（付分给杠者）</div>
+      <div class="modal-section-label">放杠人（付分给杠者）</div>
       <div class="player-select-grid" id="kong-discarder-grid"></div>
     </div>
 
@@ -789,7 +853,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.13';
+const APP_VERSION = '1.9.14';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -817,6 +881,7 @@ const state = {
     horseKong: true,              // 马是否跟杠（中马时杠的分是否随马变）
     types: {},                        // 标准牌型倍数覆盖（当前配置）
     customTypes: [],                  // 自定义牌型（当前配置）
+    removed: [],                      // 本配置中删除的标准牌型
   },
   gameStarted: false,
 };
@@ -833,9 +898,10 @@ const CONFIG_DEFAULTS = {
   horseKong: true,
   types: {},
   customTypes: [],
+  removed: [],
 };
 
-// 内置默认配置（当前这套：28 牌型 / 暗杠1·明杠1.5·加杠0.5 / 庄家买马 / 上限100）
+// 内置默认配置（当前这套：28 牌型 / 暗杠1·放杠1.5·明杠0.5 / 庄家买马 / 上限100）
 const DEFAULT_CONFIG = {
   id: 'default',
   name: '默认配置',
@@ -845,6 +911,7 @@ const DEFAULT_CONFIG = {
   maxMult: 100,
   types: {},
   customTypes: [],
+  removed: [],
 };
 
 // 当前生效配置的牌型解析（含自定义牌型与倍数覆盖）
@@ -853,6 +920,7 @@ function typeInfo(id) {
   if (custom) return custom;
   const t = HAND_TYPE_MAP[id];
   if (!t) return null;
+  if ((state.config.removed || []).includes(id)) return null;
   const over = (state.config.types || {})[id];
   return { id: t.id, name: t.name, mult: (over != null ? over : t.mult), group: t.group };
 }
@@ -911,6 +979,7 @@ let winState = { winner: -1, type: 'zimo', discarder: -1, mult: 1, customMult: f
 let kongState = { type: 'an', maker: -1, discarder: -1 };
 let viewCtx = null; // 正在查看的过往盘数据（null=当前盘）
 let sessionDateFilter = dateOf(Date.now()); // 默认显示今日
+let settlementReturn = 'settlement'; // 统计表关闭后返回哪个页面（game/setup/settlement）
 
 function activeCtx() {
   if (viewCtx) return viewCtx;
@@ -1197,25 +1266,14 @@ function calculateSettlement() {
 // ==================== Rendering ====================
 function renderScoreboard() {
   const sb = document.getElementById('scoreboard');
-  const ranked = state.scores.map((s, i) => ({ s, i })).sort((a, b) => b.s - a.s);
-  const ranks = {};
-  ranked.forEach((r, idx) => { ranks[r.i] = idx + 1; });
-
+  if (!sb) return;
   sb.innerHTML = state.players.map((name, i) => {
-    const score = state.scores[i];
-    const cls = score > 0 ? 'score-pos' : score < 0 ? 'score-neg' : 'score-zero';
-    const sign = score > 0 ? '+' : '';
-    const rankCls = ranks[i] === 1 ? 'rank-1' : '';
-    const seatTag = name === SEATS[i] ? '' : `<span class="player-seat">${SEATS[i]}</span>`;
-    const dealerBadge = i === state.dealer
-      ? '<span style="position:absolute;bottom:10px;right:10px;font-size:11px;font-weight:700;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:10px;">庄</span>'
-      : '';
-    return `<div class="score-card" data-pi="${i}" onclick="setDealer(${i})" title="设 ${esc(name)} 为庄家">
-      <div class="player-rank ${rankCls}">第${ranks[i]}</div>
-      <div class="player-name">${seatTag}${esc(name)}</div>
-      <div class="player-score ${cls}">${sign}${fmt(score)}</div>
-      ${dealerBadge}
-    </div>`;
+    const isDealer = i === state.dealer;
+    return `<button class="dealer-card ${isDealer ? 'is-dealer' : ''}" data-pi="${i}" onclick="setDealer(${i})" title="设 ${esc(name)} 为庄家">
+      ${isDealer ? '<span class="dealer-badge">庄</span>' : ''}
+      <span class="dealer-avatar" style="background:var(--p${i + 1})">${esc(name.charAt(0) || '？')}</span>
+      <span class="dealer-name">${esc(name)}</span>
+    </button>`;
   }).join('');
 }
 
@@ -1254,7 +1312,7 @@ function renderKongPreview() {
     return;
   }
   if (kongState.type === 'ming' && kongState.discarder < 0) {
-    el.innerHTML = '<div style="color:var(--text-sec);font-size:13px;">请选择点杠人</div>';
+    el.innerHTML = '<div style="color:var(--text-sec);font-size:13px;">请选择放杠人</div>';
     return;
   }
   const baseChanges = calcKong(kongState.maker, kongState.type, kongState.discarder);
@@ -1412,7 +1470,8 @@ function deleteSession(id) {
   }
 }
 
-function viewSession(id) {
+function viewSession(id, returnTo) {
+  settlementReturn = returnTo || 'settlement';
   let s;
   if (id === 'current') {
     s = {
@@ -1444,6 +1503,15 @@ function backFromSettlement() {
   if (viewCtx) {
     viewCtx = null;
     renderSettlement();
+    if (settlementReturn === 'game') {
+      settlementReturn = 'settlement';
+      showScreen('game');
+    }
+    return;
+  }
+  if (settlementReturn === 'setup') {
+    settlementReturn = 'settlement';
+    goSetup();
     return;
   }
   backToGame();
@@ -1569,7 +1637,7 @@ function winTypeText(w) {
 }
 
 function kongTypeText(k) {
-  const name = k.kongType === 'an' ? '暗杠' : k.kongType === 'ming' ? '明杠' : '加杠';
+  const name = k.kongType === 'an' ? '暗杠' : k.kongType === 'ming' ? '放杠' : '明杠';
   return k.kongType === 'ming' ? `${name}（${esc(state.players[k.discarder])}付）` : `${name}（三家各付）`;
 }
 
@@ -1642,6 +1710,7 @@ function cloneConfig(cfg) {
     maxMult: cfg.maxMult,
     types: Object.assign({}, cfg.types || {}),
     customTypes: (cfg.customTypes || []).map(t => ({ id: t.id, name: t.name, mult: t.mult, confirmed: true })),
+    removed: (cfg.removed || []).slice(),
   };
 }
 
@@ -1692,6 +1761,16 @@ function removeCustomTypeRow(i) {
   showToast('已删除');
 }
 
+function removeTypeRow(id) {
+  if (!editingConfig || editingConfig.id === 'default') return; // 默认配置不允许删标准牌型
+  syncCedInputs();
+  if (!editingConfig.removed) editingConfig.removed = [];
+  if (!editingConfig.removed.includes(id)) editingConfig.removed.push(id);
+  delete editingConfig.types[id];
+  renderCedTypes();
+  showToast('已删除');
+}
+
 function confirmCustomType(i) {
   syncCedInputs();
   if (!editingConfig.customTypes[i]) return;
@@ -1703,14 +1782,17 @@ function confirmCustomType(i) {
 function resetTypeMults() {
   syncCedInputs();
   editingConfig.types = {};
+  editingConfig.removed = [];
   renderCedTypes();
 }
 
 function cedTypeRowsHtml(cfg) {
-  const rows = HAND_TYPES.map(t => {
+  const canDelete = cfg.id !== 'default';
+  const removed = cfg.removed || [];
+  const rows = HAND_TYPES.filter(t => !removed.includes(t.id)).map(t => {
     const over = (cfg.types || {})[t.id];
     const val = over != null ? over : t.mult;
-    return `<div class="ced-type-row"><span>${esc(t.name)}</span><input type="number" class="ced-type-mult" data-id="${t.id}" value="${val}" min="0" step="0.5"></div>`;
+    return `<div class="ced-type-row"><span>${esc(t.name)}</span><div style="display:flex;align-items:center;gap:6px;"><input type="number" class="ced-type-mult" data-id="${t.id}" value="${val}" min="0" step="0.5">${canDelete ? `<button class="session-del" title="删除该牌型" onclick="removeTypeRow('${t.id}')">🗑</button>` : ''}</div></div>`;
   }).join('');
   const customs = (cfg.customTypes || []).map((t, i) =>
     `<div class="ced-type-row"><input type="text" class="ced-custom-name" data-i="${i}" value="${esc(t.name)}" placeholder="牌型名" maxlength="8" style="flex:1;min-width:0;"><input type="number" class="ced-custom-mult" data-i="${i}" value="${t.mult}" min="0" step="0.5" style="width:62px;">${t.confirmed ? '<span class="ced-confirmed">✓ 已添加</span>' : `<button class="mini-btn" onclick="confirmCustomType(${i})">✓ 确认</button>`}<button class="session-del" onclick="removeCustomTypeRow(${i})">🗑</button></div>`
@@ -1763,8 +1845,8 @@ function renderConfigEditor() {
       <div class="modal-section-label">杠规则（底分×倍数）</div>
       <div class="ced-row">
         <span>暗杠</span><input type="number" id="ced-kong-an" value="${cfg.kongAn}" min="0" step="0.5">
-        <span>明杠</span><input type="number" id="ced-kong-ming" value="${cfg.kongMing}" min="0" step="0.5">
-        <span>加杠</span><input type="number" id="ced-kong-jia" value="${cfg.kongJia}" min="0" step="0.5">
+        <span>放杠</span><input type="number" id="ced-kong-ming" value="${cfg.kongMing}" min="0" step="0.5">
+        <span>明杠</span><input type="number" id="ced-kong-jia" value="${cfg.kongJia}" min="0" step="0.5">
       </div>
     </div>
     <div class="modal-section">
@@ -1837,7 +1919,13 @@ function updateConfigNote() {
   const sel = document.getElementById('cfg-config');
   const id = sel ? sel.value : 'default';
   const cfg = id === 'default' ? DEFAULT_CONFIG : (state.configs.find(c => c.id === id) || DEFAULT_CONFIG);
-  el.innerHTML = `杠：暗杠＝底分×${fmt(cfg.kongAn)}（三家各付）｜明杠＝底分×${fmt(cfg.kongMing)}（点杠人付）｜加杠＝底分×${fmt(cfg.kongJia)}（三家各付）<br>庄家买马：${cfg.horseOn ? '开' + (cfg.horseKong !== false ? '（跟杠）' : '（不跟杠）') : '关'}｜胡牌倍数上限：${cfg.maxMult > 0 ? fmt(cfg.maxMult) + ' 倍' : '无上限'}`;
+  const ruleRow = (label, mult, payer) =>
+    `<div class="config-row"><label>${label}</label><span class="cfg-rule-box">底分×${fmt(mult)}<span class="sub">${payer}</span></span></div>`;
+  el.innerHTML =
+    ruleRow('暗杠', cfg.kongAn, '三家各付') +
+    ruleRow('放杠', cfg.kongMing, '放杠人付') +
+    ruleRow('明杠', cfg.kongJia, '三家各付') +
+    `<div style="font-size:12px;color:var(--text-sec);line-height:1.6;padding:6px 0 2px;">庄家买马：${cfg.horseOn ? '开' + (cfg.horseKong !== false ? '（跟杠）' : '（不跟杠）') : '关'}｜胡牌倍数上限：${cfg.maxMult > 0 ? fmt(cfg.maxMult) + ' 倍' : '无上限'}</div>`;
 }
 
 function applyConfig(cfg) {
@@ -1850,6 +1938,7 @@ function applyConfig(cfg) {
   state.config.maxMult = cfg.maxMult;
   state.config.types = Object.assign({}, cfg.types || {});
   state.config.customTypes = (cfg.customTypes || []).map(t => ({ id: t.id, name: t.name, mult: t.mult }));
+  state.config.removed = (cfg.removed || []).slice();
 }
 
 // ==================== Setup ====================
@@ -1955,6 +2044,7 @@ function renderGame() {
   roundEl.innerHTML = `第 ${state.rounds.length + 1} 局 ｜ 庄：<b>${esc(state.players[state.dealer])}</b>`;
   renderScoreboard();
   renderHandPanel();
+  renderGameRecords();
   document.getElementById('btn-undo').disabled = state.rounds.length === 0;
 }
 
@@ -1999,6 +2089,55 @@ function clearHand() {
   showToast('已清空本局输入');
 }
 
+// ===== 本盘对局记录（游戏页底部，可折叠） =====
+function toggleGameRecords() {
+  const body = document.getElementById('game-records-body');
+  const chev = document.getElementById('game-records-chev');
+  if (!body) return;
+  const willOpen = body.style.display === 'none';
+  body.style.display = willOpen ? 'block' : 'none';
+  if (chev) chev.textContent = willOpen ? '▾' : '▸';
+}
+
+function renderGameRecords() {
+  const countEl = document.getElementById('game-records-count');
+  const body = document.getElementById('game-records-body');
+  if (!body) return;
+  if (countEl) countEl.textContent = `共 ${state.rounds.length} 局`;
+  if (state.rounds.length === 0) {
+    body.innerHTML = '<div class="hand-empty-text" style="padding:8px 0;">本盘还没有结算的对局</div>';
+    return;
+  }
+  body.innerHTML = state.rounds.map((r, i) => {
+    const kongs = Array.isArray(r.kongs) ? r.kongs : [];
+    const handHorses = Array.isArray(r.horses) ? r.horses : [];
+    const wins = Array.isArray(r.wins) ? r.wins : (r.winner ? [r] : []);
+    let text = '';
+    if (kongs.length > 0) {
+      text += kongs.map(k => {
+        let d = kongEntryDesc(k);
+        if (handHorses.length > 0) {
+          const notes = kongHorseNotesText(k.maker, k.kongType, k.discarder, handHorses, k.dealerAt);
+          if (notes.length > 0) d += '　' + notes.join('；');
+        }
+        return d;
+      }).join('；') + '；';
+    }
+    text += wins.map(w => {
+      let d = winEntryText(w);
+      const hd = winHorseDesc(w, handHorses);
+      if (hd) d += '　' + hd;
+      return d;
+    }).join('；');
+    if (r.poolAdd > 0) text += `　（抽水 ${fmt(r.poolAdd)} 分进奖池）`;
+    return `<div class="game-record-row"><span class="gr-num">第 ${i + 1} 局</span><span>${text}</span></div>`;
+  }).join('');
+}
+
+function openFinalSettlement() {
+  viewSession('current', 'game');
+}
+
 // ===== 本局牌况 =====
 function sumChanges(list) {
   const res = [0, 0, 0, 0];
@@ -2011,7 +2150,7 @@ function sumChanges(list) {
 }
 
 function kongEntryDesc(k) {
-  const kongName = k.kongType === 'an' ? '暗杠' : k.kongType === 'ming' ? '明杠' : '加杠';
+  const kongName = k.kongType === 'an' ? '暗杠' : k.kongType === 'ming' ? '放杠' : '明杠';
   let d = `${esc(state.players[k.maker])} ${kongName}`;
   if (k.kongType === 'ming') d += `（${esc(state.players[k.discarder])}付）`;
   else d += '（三家各付）';
@@ -2027,7 +2166,7 @@ function kongEntryDesc(k) {
     } else if (h === dAt) {
       d += ` 🐴马中庄家（付家）×${n}，庄家再输${n}份`;
     } else if (k.kongType === 'ming' && h === k.discarder) {
-      d += ` 🐴马中点杠人×${n}，庄家${esc(state.players[dAt])}输${n}份`;
+      d += ` 🐴马中放杠人×${n}，庄家${esc(state.players[dAt])}输${n}份`;
     } else if (k.kongType !== 'ming') {
       d += ` 🐴马中付家${esc(state.players[h])}×${n}，庄家${esc(state.players[dAt])}输${n}份`;
     }
@@ -2054,8 +2193,8 @@ function winEntryText(w) {
 
 function renderHandPanel() {
   const hand = state.currentHand || { kongs: [], wins: [], horses: [] };
-  const poolTip = document.getElementById('hand-pool-tip');
-  if (poolTip) poolTip.textContent = `🪙 本盘总抽水：${fmt(state.pool)} 分`;
+  const poolVal = document.getElementById('game-pool-val');
+  if (poolVal) poolVal.textContent = fmt(state.pool);
   const horseSec = document.getElementById('horse-section');
   if (horseSec) horseSec.style.display = state.config.horseOn ? '' : 'none';
   const kongsEl = document.getElementById('hand-kongs');
@@ -2348,12 +2487,14 @@ function renderHandTypeGroups() {
   const wrap = document.getElementById('handtype-groups');
   if (!wrap) return;
   let html = HAND_TYPE_GROUPS.map(g => {
-    const chips = HAND_TYPES.filter(t => t.group === g.key).map(t => {
+    const removed = state.config.removed || [];
+    const chips = HAND_TYPES.filter(t => t.group === g.key && !removed.includes(t.id)).map(t => {
       const info = typeInfo(t.id);
+      if (!info) return '';
       const sel = winState.types.indexOf(t.id) >= 0;
       return `<button class="ht-chip ${sel ? 'selected' : ''}" onclick="selectHandType('${t.id}')">${info.name}<span class="ht-mult">×${info.mult}</span></button>`;
     }).join('');
-    return `<div class="ht-group"><div class="ht-group-label">${g.label}</div><div class="ht-chips">${chips}</div></div>`;
+    return chips ? `<div class="ht-group"><div class="ht-group-label">${g.label}</div><div class="ht-chips">${chips}</div></div>` : '';
   }).join('');
   const customs = state.config.customTypes || [];
   if (customs.length > 0) {
@@ -2494,8 +2635,8 @@ function updateKongHint() {
   const el = document.getElementById('kong-pay-hint');
   if (!el) return;
   const share = kongShare(kongState.type);
-  const name = kongState.type === 'an' ? '暗杠' : kongState.type === 'ming' ? '明杠' : '加杠';
-  const payer = kongState.type === 'ming' ? '点杠人付' : '三家各付';
+  const name = kongState.type === 'an' ? '暗杠' : kongState.type === 'ming' ? '放杠' : '明杠';
+  const payer = kongState.type === 'ming' ? '放杠人付' : '三家各付';
   const mult = kongState.type === 'an' ? state.config.kongAn : kongState.type === 'ming' ? state.config.kongMing : state.config.kongJia;
   el.textContent = `${name}＝底分×${fmt(mult)}（${payer}）＝${fmt(share)} 分`;
 }
@@ -2531,7 +2672,7 @@ function selectKongDiscarder(i) {
 
 function confirmKong() {
   if (kongState.maker < 0) { showToast('请选择杠者'); return; }
-  if (kongState.type === 'ming' && kongState.discarder < 0) { showToast('请选择点杠人'); return; }
+  if (kongState.type === 'ming' && kongState.discarder < 0) { showToast('请选择放杠人'); return; }
 
   const baseChanges = calcKong(kongState.maker, kongState.type, kongState.discarder);
   state.currentHand = state.currentHand || { kongs: [], wins: [], horses: [] };
@@ -2550,7 +2691,8 @@ function confirmKong() {
 }
 
 // ==================== Settlement ====================
-function showSettlement() {
+function showSettlement(returnTo) {
+  settlementReturn = returnTo || 'game';
   viewCtx = null; // 每次打开统计表默认看当前盘
   renderSettlement();
   showScreen('settlement');
