@@ -410,14 +410,6 @@ body {
 .standing-row .st-name { font-size: 16px; font-weight: 600; }
 .standing-row .st-score { font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; }
 
-.pool-section {
-  background: linear-gradient(150deg, #FDF6E3, #F9EFCC);
-  border-radius: 14px; padding: 14px; margin-bottom: 16px; text-align: center;
-  box-shadow: var(--shadow); border: 1px solid #F0E4BC;
-}
-.pool-title { font-size: 13px; font-weight: 700; color: #8A6D1D; }
-.pool-amount { font-size: 27px; font-weight: 800; color: #A97B14; font-variant-numeric: tabular-nums; }
-
 .sessions-section { margin-bottom: 16px; }
 .sessions-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .sessions-count { font-size: 12px; color: var(--ink2); font-weight: 600; }
@@ -752,10 +744,6 @@ body {
       <div class="ss-item"><div class="ss-label">💧 总抽水</div><div class="ss-value pool" id="ss-pool">0 分</div></div>
     </div>
     <div class="standings" id="standings"></div>
-    <div class="pool-section" id="pool-section" style="display:none;">
-      <div class="pool-title">🪙 共享奖池</div>
-      <div class="pool-amount" id="pool-amount">0</div>
-    </div>
     <div class="detail-section">
       <div class="detail-title-row">
         <span class="detail-title-lg">📋 对局明细</span>
@@ -925,7 +913,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.19';
+const APP_VERSION = '1.9.20';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -1443,17 +1431,6 @@ function renderDetailView() {
       <div class="st-score ${cls}">${sign}${fmt(p.score)}</div>
     </div>`;
   }).join('');
-
-  const poolSec = document.getElementById('pool-section');
-  const poolAmt = document.getElementById('pool-amount');
-  if (poolSec && poolAmt) {
-    if (ctx.pool > 0) {
-      poolSec.style.display = 'block';
-      poolAmt.textContent = fmt(ctx.pool) + ' 分';
-    } else {
-      poolSec.style.display = 'none';
-    }
-  }
 
   renderHandDetails();
 }
