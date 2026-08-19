@@ -93,7 +93,7 @@ body {
   background: var(--card); border-radius: var(--r-lg); padding: 2px 16px;
   box-shadow: var(--shadow); margin-top: 4px;
 }
-.config-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.config-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); }
 .config-row:last-child { border-bottom: none; }
 .config-row label { font-size: 15px; font-weight: 500; color: var(--ink); }
 .config-row input[type="number"] {
@@ -101,6 +101,19 @@ body {
   text-align: center; font-size: 16px; font-weight: 600; background: var(--bg);
 }
 .config-row input[type="number"]:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(46,107,80,.12); background: #fff; }
+.cfg-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.cfg-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cfg-cell label { font-size: 14px; font-weight: 500; color: var(--ink); white-space: nowrap; }
+.cfg-cell input[type="number"] {
+  flex: 1; min-width: 0; padding: 9px 6px; border: 1px solid var(--line); border-radius: 10px;
+  text-align: center; font-size: 15px; font-weight: 600; background: var(--bg);
+}
+.cfg-cell input[type="number"]:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(46,107,80,.12); background: #fff; }
+.cfg-kong-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 0 4px; }
+.cfg-kong { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 4px; text-align: center; }
+.cfg-kong .k-name { font-size: 12px; font-weight: 700; color: var(--ink); }
+.cfg-kong .k-mult { font-size: 13px; font-weight: 800; color: var(--brand); margin-top: 2px; }
+.cfg-kong .k-pay { font-size: 10px; color: var(--ink2); margin-top: 1px; }
 .rake-input {
   width: 58px; padding: 9px 6px; border: 1px solid var(--line); border-radius: 10px;
   text-align: center; font-size: 16px; font-weight: 600; background: var(--bg);
@@ -330,22 +343,22 @@ body {
 .ced-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 
 /* 马匹计数 */
-#hand-horse-grid { display: flex; flex-direction: column; gap: 8px; }
+#hand-horse-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .horse-counter {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px;
-  background: var(--card); font-size: 15px; font-weight: 600;
+  padding: 8px 9px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--card); font-size: 13px; font-weight: 600; min-width: 0;
 }
 .horse-counter.selected { border-color: var(--brand); background: var(--brand-w); }
-.horse-counter .horse-name { flex: 1; }
-.horse-ctrl { display: flex; align-items: center; gap: 8px; }
+.horse-counter .horse-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.horse-ctrl { display: flex; align-items: center; gap: 5px; }
 .horse-ctrl button {
-  width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 10px;
-  background: var(--card); font-size: 18px; font-weight: 700; cursor: pointer; line-height: 1; color: var(--ink);
+  width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--card); font-size: 16px; font-weight: 700; cursor: pointer; line-height: 1; color: var(--ink);
 }
 .horse-ctrl button:active { transform: scale(.92); background: #F5F6F3; }
 .horse-ctrl button:disabled { opacity: .3; cursor: default; }
-.horse-ctrl .horse-n { min-width: 52px; text-align: center; font-size: 13px; color: var(--brand); font-weight: 700; }
+.horse-ctrl .horse-n { min-width: 30px; text-align: center; font-size: 12px; color: var(--brand); font-weight: 700; }
 
 .preview-box { background: var(--bg); border-radius: 12px; padding: 14px; margin: 16px 0; }
 .preview-box .preview-title { font-size: 12px; color: var(--ink2); margin-bottom: 8px; font-weight: 600; }
@@ -422,10 +435,37 @@ body {
 .session-del:active { opacity: 1; transform: scale(.9); }
 .session-arrow { color: var(--ink3); font-size: 18px; flex-shrink: 0; }
 .session-filter { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; }
-.session-filter input[type="date"] {
-  flex: 1; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px;
-  font-size: 13px; background: var(--card); color: var(--ink);
+.date-trigger {
+  flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px;
+  font-size: 13px; background: var(--card); color: var(--ink); cursor: pointer; white-space: nowrap;
 }
+.cal-wrap { border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 10px; margin: 0 0 10px; box-shadow: var(--shadow); }
+.cal-head { display: flex; align-items: center; justify-content: space-between; }
+.cal-nav { width: 30px; height: 30px; border: none; background: var(--bg); border-radius: 8px; font-size: 18px; cursor: pointer; color: var(--ink); line-height: 1; }
+.cal-nav:active { background: #E6E9E3; }
+.cal-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+.cal-week { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; color: var(--ink3); margin-top: 10px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 4px; }
+.cal-cell {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 9px;
+  font-size: 13px; color: var(--ink); cursor: pointer; position: relative;
+}
+.cal-cell.empty { cursor: default; }
+.cal-cell.today { box-shadow: inset 0 0 0 1.5px var(--brand); }
+.cal-cell.has-data::after {
+  content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%; background: var(--brand);
+}
+.cal-cell.selected { background: var(--brand); color: #fff; font-weight: 700; }
+.cal-cell.selected.has-data::after { background: #fff; }
+
+/* 最终结算顶部摘要 */
+.settle-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.ss-item { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 12px; text-align: center; box-shadow: var(--shadow); }
+.ss-item .ss-label { font-size: 12px; color: var(--ink2); font-weight: 600; }
+.ss-item .ss-value { font-size: 24px; font-weight: 800; color: var(--ink); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.ss-item .ss-value.pool { color: #A97B14; }
 
 .detail-section { margin-bottom: 18px; }
 .detail-title { font-size: 13px; font-weight: 600; color: var(--ink2); margin-bottom: 9px; }
@@ -555,16 +595,12 @@ body {
       <label>本盘配置</label>
       <select id="cfg-config" onchange="updateConfigNote()" style="max-width:150px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:var(--bg);color:var(--ink);"></select>
     </div>
-    <div class="config-row">
-      <label>底分</label>
-      <input type="number" id="cfg-base" value="1" min="0.5" step="0.5">
+    <div class="cfg-grid2">
+      <div class="cfg-cell"><label>底分</label><input type="number" id="cfg-base" value="1" min="0.5" step="0.5"></div>
+      <div class="cfg-cell"><label>倍数上限</label><input type="number" id="cfg-max-mult" value="100" min="0" step="1" title="0＝无上限"></div>
     </div>
     <div class="config-row">
-      <label>胡牌倍数上限（0＝无上限）</label>
-      <input type="number" id="cfg-max-mult" value="100" min="0" step="1">
-    </div>
-    <div class="config-row">
-      <label>抽水（0＝关闭）</label>
+      <label>抽水</label>
       <div style="display:flex;align-items:center;gap:5px;">
         <span style="font-size:12px;color:var(--text-sec);">满</span>
         <input type="number" id="cfg-rake-th" value="30" min="0" step="1" class="rake-input">
@@ -590,7 +626,7 @@ body {
       <div class="round-info" id="round-info">第 1 局</div>
     </div>
     <div class="header-actions">
-      <div class="pool-chip" id="game-pool-chip" title="本盘总抽水">🪙 <span id="game-pool-val">0</span> 分</div>
+      <div class="pool-chip" id="game-pool-chip" title="本盘总抽水">💧 <span id="game-pool-val">0</span> 分</div>
       <button class="icon-btn" onclick="showSettlement('game')" title="统计表">📊</button>
     </div>
   </div>
@@ -672,13 +708,28 @@ body {
           <button class="toggle-btn active" data-r="today" onclick="setSessRange('today')">今日</button>
           <button class="toggle-btn" data-r="all" onclick="setSessRange('all')">全部</button>
         </div>
-        <input type="date" id="session-date-filter" onchange="filterSessions()">
+        <button class="date-trigger" id="session-date-trigger" onclick="toggleCalendar()">
+          <span id="session-date-label">选择日期</span><span>📅</span>
+        </button>
         <button class="mini-btn" onclick="clearSessionFilter()">清除筛选</button>
+      </div>
+      <div class="cal-wrap" id="session-cal" style="display:none;">
+        <div class="cal-head">
+          <button class="cal-nav" onclick="calShift(-1)">‹</button>
+          <div class="cal-title" id="cal-title"></div>
+          <button class="cal-nav" onclick="calShift(1)">›</button>
+        </div>
+        <div class="cal-week">日 一 二 三 四 五 六</div>
+        <div class="cal-grid" id="cal-grid"></div>
       </div>
       <div id="sessions-list"></div>
     </div>
   </div>
   <div id="session-detail-view" style="display:none;">
+    <div class="settle-summary">
+      <div class="ss-item"><div class="ss-label">总局数</div><div class="ss-value" id="ss-rounds">0</div></div>
+      <div class="ss-item"><div class="ss-label">💧 总抽水</div><div class="ss-value pool" id="ss-pool">0 分</div></div>
+    </div>
     <div class="standings" id="standings"></div>
     <div class="pool-section" id="pool-section" style="display:none;">
       <div class="pool-title">🪙 共享奖池</div>
@@ -853,7 +904,7 @@ body {
 <script>
 // ==================== State ====================
 const STORAGE_KEY = 'mahjong_score_v4';
-const APP_VERSION = '1.9.14';
+const APP_VERSION = '1.9.15';
 const SEATS = ['东家', '南家', '西家', '北家'];
 
 const state = {
@@ -980,6 +1031,8 @@ let kongState = { type: 'an', maker: -1, discarder: -1 };
 let viewCtx = null; // 正在查看的过往盘数据（null=当前盘）
 let sessionDateFilter = dateOf(Date.now()); // 默认显示今日
 let settlementReturn = 'settlement'; // 统计表关闭后返回哪个页面（game/setup/settlement）
+let calOpen = false;
+let calView = (() => { const n = new Date(); return { y: n.getFullYear(), m: n.getMonth() }; })();
 
 function activeCtx() {
   if (viewCtx) return viewCtx;
@@ -1350,6 +1403,10 @@ function renderSettlement() {
 
 function renderDetailView() {
   const ctx = activeCtx();
+  const ssRounds = document.getElementById('ss-rounds');
+  const ssPool = document.getElementById('ss-pool');
+  if (ssRounds) ssRounds.textContent = ctx.rounds.length;
+  if (ssPool) ssPool.textContent = fmt(ctx.pool) + ' 分';
   const standings = document.getElementById('standings');
   const sorted = ctx.players.map((name, i) => ({ name, score: ctx.scores[i], pi: i }))
     .sort((a, b) => b.score - a.score);
@@ -1384,9 +1441,10 @@ function renderSessionsList() {
   const section = document.getElementById('sessions-section');
   const list = document.getElementById('sessions-list');
   const countEl = document.getElementById('sessions-count');
-  const dateInput = document.getElementById('session-date-filter');
+  const dateLabel = document.getElementById('session-date-label');
   if (!section || !list) return;
-  if (dateInput) dateInput.value = sessionDateFilter || '';
+  if (dateLabel) dateLabel.textContent = sessionDateFilter || '选择日期';
+  if (calOpen) renderCalendar();
   const isToday = sessionDateFilter === dateOf(Date.now());
   document.querySelectorAll('#sess-range .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.r === (isToday ? 'today' : 'all')));
   if (state.sessions.length === 0 && !state.gameStarted) {
@@ -1447,14 +1505,62 @@ function dateOf(ts) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function filterSessions() {
-  sessionDateFilter = document.getElementById('session-date-filter').value || '';
+function clearSessionFilter() {
+  sessionDateFilter = '';
   renderSessionsList();
 }
 
-function clearSessionFilter() {
-  sessionDateFilter = '';
-  document.getElementById('session-date-filter').value = '';
+// ===== 自定义日期选择（日历，有战绩日期高亮） =====
+function toggleCalendar() {
+  calOpen = !calOpen;
+  const cal = document.getElementById('session-cal');
+  if (cal) cal.style.display = calOpen ? 'block' : 'none';
+  if (calOpen) renderCalendar();
+}
+
+function dataDates() {
+  const set = new Set();
+  (state.sessions || []).forEach(s => {
+    if (s.rounds && s.rounds.length) set.add(dateOf(s.createdAt));
+  });
+  if (state.gameStarted && state.rounds.length) set.add(dateOf(state.sessionCreatedAt || Date.now()));
+  return set;
+}
+
+function renderCalendar() {
+  const y = calView.y, m = calView.m;
+  const titleEl = document.getElementById('cal-title');
+  if (titleEl) titleEl.textContent = `${y}年${m + 1}月`;
+  const dataSet = dataDates();
+  const today = dateOf(Date.now());
+  const first = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+  let html = '';
+  for (let i = 0; i < first; i++) html += '<div class="cal-cell empty"></div>';
+  for (let d = 1; d <= days; d++) {
+    const dstr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const cls = ['cal-cell'];
+    if (dstr === today) cls.push('today');
+    if (dataSet.has(dstr)) cls.push('has-data');
+    if (dstr === sessionDateFilter) cls.push('selected');
+    html += `<div class="${cls.join(' ')}" onclick="selectCalDate('${dstr}')">${d}</div>`;
+  }
+  const grid = document.getElementById('cal-grid');
+  if (grid) grid.innerHTML = html;
+}
+
+function calShift(delta) {
+  const d = new Date(calView.y, calView.m + delta, 1);
+  calView.y = d.getFullYear();
+  calView.m = d.getMonth();
+  renderCalendar();
+}
+
+function selectCalDate(dstr) {
+  sessionDateFilter = dstr;
+  calOpen = false;
+  const cal = document.getElementById('session-cal');
+  if (cal) cal.style.display = 'none';
   renderSessionsList();
 }
 
@@ -1919,13 +2025,11 @@ function updateConfigNote() {
   const sel = document.getElementById('cfg-config');
   const id = sel ? sel.value : 'default';
   const cfg = id === 'default' ? DEFAULT_CONFIG : (state.configs.find(c => c.id === id) || DEFAULT_CONFIG);
-  const ruleRow = (label, mult, payer) =>
-    `<div class="config-row"><label>${label}</label><span class="cfg-rule-box">底分×${fmt(mult)}<span class="sub">${payer}</span></span></div>`;
+  const kongBox = (name, mult, payer) =>
+    `<div class="cfg-kong"><div class="k-name">${name}</div><div class="k-mult">×${fmt(mult)}</div><div class="k-pay">${payer}</div></div>`;
   el.innerHTML =
-    ruleRow('暗杠', cfg.kongAn, '三家各付') +
-    ruleRow('放杠', cfg.kongMing, '放杠人付') +
-    ruleRow('明杠', cfg.kongJia, '三家各付') +
-    `<div style="font-size:12px;color:var(--text-sec);line-height:1.6;padding:6px 0 2px;">庄家买马：${cfg.horseOn ? '开' + (cfg.horseKong !== false ? '（跟杠）' : '（不跟杠）') : '关'}｜胡牌倍数上限：${cfg.maxMult > 0 ? fmt(cfg.maxMult) + ' 倍' : '无上限'}</div>`;
+    `<div class="cfg-kong-grid">${kongBox('暗杠', cfg.kongAn, '三家各付')}${kongBox('放杠', cfg.kongMing, '放杠人付')}${kongBox('明杠', cfg.kongJia, '三家各付')}</div>` +
+    `<div style="font-size:12px;color:var(--text-sec);line-height:1.5;padding:4px 0 2px;">庄家买马：${cfg.horseOn ? '开' + (cfg.horseKong !== false ? '（跟杠）' : '（不跟杠）') : '关'}｜倍数上限：${cfg.maxMult > 0 ? fmt(cfg.maxMult) + ' 倍' : '无上限'}（0＝无上限）</div>`;
 }
 
 function applyConfig(cfg) {
